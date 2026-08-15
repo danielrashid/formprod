@@ -4,11 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
-import { Eye, EyeOff, Loader2, LogIn, ShieldCheck, MapPin, Users } from "lucide-react";
+import { maskCPF, onlyDigits } from "@/lib/masks";
+import { Eye, EyeOff, Loader2, LogIn, ShieldCheck, MapPin, IdCard } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [cpf, setCpf] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +20,25 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
+    const digits = onlyDigits(cpf);
+    if (digits.length !== 11) {
+      setError("Digite um CPF válido.");
+      setLoading(false);
+      return;
+    }
+
     const supabase = createClient();
+
+    const { data: email, error: cpfError } = await supabase.rpc("user_email_by_cpf", {
+      p_cpf: digits,
+    });
+
+    if (cpfError || !email) {
+      setError("CPF não encontrado. Verifique os dados.");
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -28,7 +47,7 @@ export default function LoginPage() {
     if (error) {
       setError(
         error.message === "Invalid login credentials"
-          ? "E-mail ou senha inválidos."
+          ? "CPF ou senha inválidos."
           : error.message
       );
       setLoading(false);
@@ -64,22 +83,23 @@ export default function LoginPage() {
           <div className="rounded-3xl bg-white p-6 shadow-2xl">
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-700">
-                  E-mail
+                <label htmlFor="cpf" className="mb-1.5 block text-sm font-medium text-slate-700">
+                  CPF
                 </label>
                 <div className="relative">
                   <span className="pointer-events-none absolute inset-y-0 left-3 grid place-items-center text-slate-400">
-                    <Users className="size-4" />
+                    <IdCard className="size-4" />
                   </span>
                   <input
-                    id="email"
-                    type="email"
+                    id="cpf"
+                    type="text"
                     required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    inputMode="numeric"
+                    autoComplete="off"
+                    value={cpf}
+                    onChange={(e) => setCpf(maskCPF(e.target.value))}
                     className="w-full rounded-xl border border-border bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-foreground placeholder:text-slate-400 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    placeholder="voce@secretaria.gov.br"
-                    autoComplete="email"
+                    placeholder="000.000.000-00"
                   />
                 </div>
               </div>
@@ -146,7 +166,7 @@ export default function LoginPage() {
             </span>
             <span className="h-3 w-px bg-white/20" />
             <span className="flex items-center gap-1.5 text-xs">
-              <Users className="size-3.5" /> Perfis por secretaria
+              <IdCard className="size-3.5" /> Acesso por CPF
             </span>
             <span className="h-3 w-px bg-white/20" />
             <span className="flex items-center gap-1.5 text-xs">

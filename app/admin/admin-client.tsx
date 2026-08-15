@@ -16,6 +16,7 @@ import {
   Users,
 } from "lucide-react";
 import { criarSecretaria, criarFormulario, criarUsuario, atualizarUsuario } from "@/app/actions/admin";
+import { maskCPF, maskPhone } from "@/lib/masks";
 
 export type SecretariaAdmin = {
   id: string;
@@ -128,11 +129,23 @@ export function AdminClient({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className={labelClass}>CPF</label>
-                    <input name="cpf" placeholder="000.000.000-00" className={inputClass} />
+                    <input
+                      name="cpf"
+                      inputMode="numeric"
+                      placeholder="000.000.000-00"
+                      onInput={(e) => (e.currentTarget.value = maskCPF(e.currentTarget.value))}
+                      className={inputClass}
+                    />
                   </div>
                   <div>
                     <label className={labelClass}>Telefone</label>
-                    <input name="telefone" placeholder="(61) 90000-0000" className={inputClass} />
+                    <input
+                      name="telefone"
+                      inputMode="tel"
+                      placeholder="(61) 90000-0000"
+                      onInput={(e) => (e.currentTarget.value = maskPhone(e.currentTarget.value))}
+                      className={inputClass}
+                    />
                   </div>
                 </div>
                 <div>
@@ -184,8 +197,18 @@ export function AdminClient({
                     </p>
                     {(u.cpf || u.telefone) && (
                       <p className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted">
-                        {u.cpf && <span className="flex items-center gap-1"><ShieldCheck className="size-3" />{u.cpf}</span>}
-                        {u.telefone && <span className="flex items-center gap-1"><Phone className="size-3" />{u.telefone}</span>}
+                        {u.cpf && (
+                          <span className="flex items-center gap-1">
+                            <ShieldCheck className="size-3" />
+                            {maskCPF(u.cpf)}
+                          </span>
+                        )}
+                        {u.telefone && (
+                          <span className="flex items-center gap-1">
+                            <Phone className="size-3" />
+                            {maskPhone(u.telefone)}
+                          </span>
+                        )}
                       </p>
                     )}
                   </div>
@@ -225,11 +248,23 @@ export function AdminClient({
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className={labelClass}>CPF</label>
-                        <input name="cpf" defaultValue={u.cpf ?? ""} className={inputClass} />
+                        <input
+                          name="cpf"
+                          inputMode="numeric"
+                          defaultValue={u.cpf ?? ""}
+                          onInput={(e) => (e.currentTarget.value = maskCPF(e.currentTarget.value))}
+                          className={inputClass}
+                        />
                       </div>
                       <div>
                         <label className={labelClass}>Telefone</label>
-                        <input name="telefone" defaultValue={u.telefone ?? ""} className={inputClass} />
+                        <input
+                          name="telefone"
+                          inputMode="tel"
+                          defaultValue={u.telefone ?? ""}
+                          onInput={(e) => (e.currentTarget.value = maskPhone(e.currentTarget.value))}
+                          className={inputClass}
+                        />
                       </div>
                     </div>
                     <div className="grid grid-cols-1 gap-3">

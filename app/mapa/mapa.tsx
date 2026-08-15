@@ -12,6 +12,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Logo } from "@/components/ui";
 import type { Pessoa, QuerVoltarEstado } from "@/lib/types";
+import { maskCPF } from "@/lib/masks";
 import {
   ArrowLeft,
   MapPin,
@@ -261,7 +262,9 @@ export function MapaPessoas({ pessoas }: { pessoas: Pessoa[] }) {
               <div className="flex items-center gap-3 rounded-xl bg-slate-50 px-3.5 py-2.5">
                 <User className="size-4 shrink-0 text-muted" />
                 <span className="text-sm text-muted">CPF</span>
-                <span className="ml-auto font-medium text-foreground">{selecionada.cpf ?? "—"}</span>
+                <span className="ml-auto font-medium text-foreground">
+                  {selecionada.cpf ? maskCPF(selecionada.cpf) : "—"}
+                </span>
               </div>
               <div className="flex items-center gap-3 rounded-xl bg-slate-50 px-3.5 py-2.5">
                 <Users className="size-4 shrink-0 text-muted" />

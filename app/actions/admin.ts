@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireProfile } from "@/app/actions/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { onlyDigits } from "@/lib/masks";
 
 export async function criarSecretaria(formData: FormData) {
   const { profile } = await requireProfile();
@@ -46,8 +47,8 @@ export async function criarUsuario(formData: FormData) {
   const senha = String(formData.get("senha"));
   const role = String(formData.get("role"));
   const secretariaId = String(formData.get("secretaria_id")) || null;
-  const cpf = String(formData.get("cpf") ?? "").trim() || null;
-  const telefone = String(formData.get("telefone") ?? "").trim() || null;
+  const cpf = onlyDigits(String(formData.get("cpf") ?? "")) || null;
+  const telefone = onlyDigits(String(formData.get("telefone") ?? "")) || null;
 
   if (!nome || !email || senha.length < 6) {
     throw new Error("Preencha nome, email e senha (mín. 6 caracteres).");
@@ -75,8 +76,8 @@ export async function atualizarUsuario(formData: FormData) {
   const senha = String(formData.get("senha"));
   const role = String(formData.get("role"));
   const secretariaId = String(formData.get("secretaria_id")) || null;
-  const cpf = String(formData.get("cpf") ?? "").trim() || null;
-  const telefone = String(formData.get("telefone") ?? "").trim() || null;
+  const cpf = onlyDigits(String(formData.get("cpf") ?? "")) || null;
+  const telefone = onlyDigits(String(formData.get("telefone") ?? "")) || null;
 
   if (!userId) return;
 
