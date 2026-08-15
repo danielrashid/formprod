@@ -1,5 +1,5 @@
 -- ============================================================
--- Schema inicial — FormProd (levantamento por secretaria)
+-- Schema inicial — DFLegal (levantamento por secretaria)
 -- ============================================================
 
 create extension if not exists "pgcrypto";

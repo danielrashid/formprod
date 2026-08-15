@@ -158,7 +158,7 @@ export default async function HomePage() {
       <section className="mb-6">
         <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-primary-dark to-primary p-5 text-white shadow-card">
           <p className="text-sm font-medium text-white/70">
-            Bem-vindo(a), {profileData.full_name.split(" ")[0]} 👋
+            Bem-vindo(a), {profileData.full_name.split(" ")[0]}
           </p>
           <h2 className="mt-1 text-lg font-bold">
             {role === "agente"
@@ -169,13 +169,13 @@ export default async function HomePage() {
           </h2>
           <div className="mt-4 flex flex-wrap gap-2">
             <Badge tone="blue">
-              <span className="text-white/80">Papel:</span>
-              <span className="font-semibold text-white">{roleLabel[role]}</span>
+              <span className="text-slate-500">Papel:</span>
+              <span className="font-semibold text-slate-900">{roleLabel[role]}</span>
             </Badge>
             {secretaria && (
               <Badge tone="blue">
-                <span className="text-white/80">Secretaria:</span>
-                <span className="font-semibold text-white">{secretaria}</span>
+                <span className="text-slate-500">Secretaria:</span>
+                <span className="font-semibold text-slate-900">{secretaria}</span>
               </Badge>
             )}
           </div>

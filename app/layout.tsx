@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FormProd — Levantamento social",
+  title: "DFLegal — Levantamento social",
   description:
     "Formulários de levantamento social por secretaria com geolocalização.",
 };

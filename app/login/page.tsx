@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { ClipboardPen, Loader2, LogIn, ShieldCheck, MapPin, Users } from "lucide-react";
+import { ClipboardPen, Eye, EyeOff, Loader2, LogIn, ShieldCheck, MapPin, Users } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -48,9 +49,9 @@ export default function LoginPage() {
             <div className="mb-4 grid size-16 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-xl ring-4 ring-white/10">
               <ClipboardPen className="size-8" />
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">FormProd</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-white">DFLegal</h1>
             <p className="mt-1 text-sm text-white/60">
-              Levantamento social por secretaria
+              Governo do Distrito Federal
             </p>
           </div>
 
@@ -87,14 +88,23 @@ export default function LoginPage() {
                   </span>
                   <input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-xl border border-border bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-foreground placeholder:text-slate-400 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="w-full rounded-xl border border-border bg-slate-50 py-2.5 pl-9 pr-11 text-sm text-foreground placeholder:text-slate-400 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
                     placeholder="••••••••"
                     autoComplete="current-password"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    title={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                    className="absolute inset-y-0 right-0 grid w-11 place-items-center text-slate-400 transition hover:text-primary focus:outline-none"
+                  >
+                    {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                  </button>
                 </div>
               </div>
 

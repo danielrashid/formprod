@@ -19,7 +19,7 @@ export function Logo({ small }: { small?: boolean }) {
       </div>
       {!small && (
         <div className="leading-tight">
-          <p className="text-base font-bold tracking-tight text-white">FormProd</p>
+          <p className="text-base font-bold tracking-tight text-white">DFLegal</p>
           <p className="text-[11px] font-medium text-white/70">
             Levantamento social
           </p>

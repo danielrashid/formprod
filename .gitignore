@@ -43,3 +43,5 @@ next-env.d.ts
 # dev
 dev.log
 tmp_*.txt
+
+.vercel

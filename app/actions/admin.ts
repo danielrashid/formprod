@@ -46,6 +46,8 @@ export async function criarUsuario(formData: FormData) {
   const senha = String(formData.get("senha"));
   const role = String(formData.get("role"));
   const secretariaId = String(formData.get("secretaria_id")) || null;
+  const cpf = String(formData.get("cpf") ?? "").trim() || null;
+  const telefone = String(formData.get("telefone") ?? "").trim() || null;
 
   if (!nome || !email || senha.length < 6) {
     throw new Error("Preencha nome, email e senha (mín. 6 caracteres).");
@@ -56,11 +58,47 @@ export async function criarUsuario(formData: FormData) {
     email,
     password: senha,
     email_confirm: true,
-    user_metadata: { full_name: nome, role, secretaria_id: secretariaId },
+    user_metadata: { full_name: nome, role, secretaria_id: secretariaId, cpf, telefone },
   });
 
   if (error) throw new Error(error.message);
   if (!data.user) throw new Error("Não foi possível criar o usuário.");
+
+  revalidatePath("/admin");
+}
+
+export async function atualizarUsuario(formData: FormData) {
+  const { profile } = await requireProfile();
+  if (profile.role !== "admin") return;
+
+  const userId = String(formData.get("user_id"));
+  const senha = String(formData.get("senha"));
+  const role = String(formData.get("role"));
+  const secretariaId = String(formData.get("secretaria_id")) || null;
+  const cpf = String(formData.get("cpf") ?? "").trim() || null;
+  const telefone = String(formData.get("telefone") ?? "").trim() || null;
+
+  if (!userId) return;
+
+  const admin = createAdminClient();
+  const supabase = await createClient();
+
+  if (senha) {
+    if (senha.length < 6) {
+      throw new Error("A nova senha precisa de no mínimo 6 caracteres.");
+    }
+    const { error: passError } = await admin.auth.admin.updateUserById(userId, {
+      password: senha,
+    });
+    if (passError) throw new Error(passError.message);
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ role, secretaria_id: secretariaId, cpf, telefone })
+    .eq("id", userId);
+
+  if (error) throw new Error(error.message);
 
   revalidatePath("/admin");
 }
