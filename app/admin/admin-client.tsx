@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import {
   Building2,
+  CheckCircle2,
   ChevronDown,
   ClipboardList,
   FilePlus2,
   KeyRound,
+  Loader2,
   Mail,
   Pencil,
   Phone,
@@ -14,8 +16,15 @@ import {
   ShieldCheck,
   UserPlus,
   Users,
+  XCircle,
 } from "lucide-react";
-import { criarSecretaria, criarFormulario, criarUsuario, atualizarUsuario } from "@/app/actions/admin";
+import {
+  criarSecretaria,
+  criarFormulario,
+  criarUsuario,
+  atualizarUsuario,
+  type ActionState,
+} from "@/app/actions/admin";
 import { maskCPF, maskPhone } from "@/lib/masks";
 
 export type SecretariaAdmin = {
@@ -50,6 +59,46 @@ const inputClass =
   "w-full rounded-xl border border-border bg-slate-50 px-3 py-2.5 text-sm text-foreground placeholder:text-slate-400 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20";
 
 const labelClass = "mb-1.5 block text-xs font-semibold text-slate-600";
+
+function FormFeedback({ state }: { state: ActionState }) {
+  if (!state) return null;
+  return (
+    <div
+      role="status"
+      className={`flex items-start gap-2 rounded-xl px-3.5 py-2.5 text-sm ${
+        state.ok
+          ? "bg-success-soft text-success"
+          : "bg-danger-soft text-danger"
+      }`}
+    >
+      {state.ok ? (
+        <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
+      ) : (
+        <XCircle className="mt-0.5 size-4 shrink-0" />
+      )}
+      <span>{state.message}</span>
+    </div>
+  );
+}
+
+function SubmitButton({
+  pending,
+  children,
+}: {
+  pending: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover active:scale-[0.98] disabled:opacity-60"
+    >
+      {pending && <Loader2 className="size-4 animate-spin" />}
+      {children}
+    </button>
+  );
+}
 
 export function AdminClient({
   secretarias,
@@ -116,70 +165,7 @@ export function AdminClient({
           </button>
 
           {novoUsuarioAberto && (
-            <form action={criarUsuario} className="mt-2 space-y-3 rounded-2xl bg-surface p-4 shadow-card">
-              <div className="grid grid-cols-1 gap-3">
-                <div>
-                  <label className={labelClass}>Nome completo</label>
-                  <input name="nome" required placeholder="Nome completo" className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>Email</label>
-                  <input name="email" type="email" required placeholder="voce@secretaria.gov.br" className={inputClass} />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className={labelClass}>CPF</label>
-                    <input
-                      name="cpf"
-                      inputMode="numeric"
-                      placeholder="000.000.000-00"
-                      onInput={(e) => (e.currentTarget.value = maskCPF(e.currentTarget.value))}
-                      className={inputClass}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Telefone</label>
-                    <input
-                      name="telefone"
-                      inputMode="tel"
-                      placeholder="(61) 90000-0000"
-                      onInput={(e) => (e.currentTarget.value = maskPhone(e.currentTarget.value))}
-                      className={inputClass}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className={labelClass}>Senha inicial</label>
-                  <input name="senha" type="password" required minLength={6} placeholder="Mín. 6 caracteres" className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>Papel</label>
-                  <select name="role" required defaultValue="agente" className={inputClass}>
-                    <option value="agente">Agente (preenche formulários)</option>
-                    <option value="editor">Editor (cria perguntas)</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-                <div>
-                  <label className={labelClass}>Secretaria</label>
-                  <select name="secretaria_id" defaultValue="" className={inputClass}>
-                    <option value="">Sem secretaria</option>
-                    {secretarias.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.sigla} — {s.nome}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <button
-                type="submit"
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover"
-              >
-                <PlusCircle className="size-4" />
-                Criar usuário
-              </button>
-            </form>
+            <NovoUsuarioForm secretarias={secretarias} />
           )}
 
           <div className="mt-4 space-y-2">
@@ -243,74 +229,7 @@ export function AdminClient({
                 </div>
 
                 {openId === u.id && (
-                  <form action={atualizarUsuario} className="space-y-3 border-t border-border px-4 py-4">
-                    <input type="hidden" name="user_id" value={u.id} />
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className={labelClass}>CPF</label>
-                        <input
-                          name="cpf"
-                          inputMode="numeric"
-                          defaultValue={u.cpf ?? ""}
-                          onInput={(e) => (e.currentTarget.value = maskCPF(e.currentTarget.value))}
-                          className={inputClass}
-                        />
-                      </div>
-                      <div>
-                        <label className={labelClass}>Telefone</label>
-                        <input
-                          name="telefone"
-                          inputMode="tel"
-                          defaultValue={u.telefone ?? ""}
-                          onInput={(e) => (e.currentTarget.value = maskPhone(e.currentTarget.value))}
-                          className={inputClass}
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 gap-3">
-                      <div>
-                        <label className={labelClass}>Papel</label>
-                        <select name="role" defaultValue={u.role} className={inputClass}>
-                          <option value="agente">Agente (preenche formulários)</option>
-                          <option value="editor">Editor (cria perguntas)</option>
-                          <option value="admin">Admin</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className={labelClass}>Secretaria</label>
-                        <select name="secretaria_id" defaultValue={u.secretaria_id ?? ""} className={inputClass}>
-                          <option value="">Sem secretaria</option>
-                          {secretarias.map((s) => (
-                            <option key={s.id} value={s.id}>
-                              {s.sigla} — {s.nome}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className={labelClass}>
-                          <span className="flex items-center gap-1">
-                            <KeyRound className="size-3.5" />
-                            Nova senha <span className="font-normal text-slate-400">(deixe vazio para manter)</span>
-                          </span>
-                        </label>
-                        <input
-                          name="senha"
-                          type="password"
-                          minLength={6}
-                          placeholder="Mín. 6 caracteres"
-                          className={inputClass}
-                        />
-                      </div>
-                    </div>
-                    <button
-                      type="submit"
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover"
-                    >
-                      <Pencil className="size-4" />
-                      Salvar alterações
-                    </button>
-                  </form>
+                  <EditarUsuarioForm usuario={u} secretarias={secretarias} />
                 )}
               </div>
             ))}
@@ -331,23 +250,7 @@ export function AdminClient({
               <FilePlus2 className="size-4 text-primary" />
               Nova secretaria
             </h2>
-            <form action={criarSecretaria} className="space-y-3">
-              <div>
-                <label className={labelClass}>Nome</label>
-                <input name="nome" required placeholder="Ex: Secretaria de Desenvolvimento Social" className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Sigla</label>
-                <input name="sigla" required placeholder="Ex: SEDES" className={inputClass} />
-              </div>
-              <button
-                type="submit"
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover"
-              >
-                <PlusCircle className="size-4" />
-                Adicionar secretaria
-              </button>
-            </form>
+            <NovaSecretariaForm />
           </div>
 
           <div className="mt-4 space-y-2">
@@ -382,36 +285,7 @@ export function AdminClient({
               <FilePlus2 className="size-4 text-primary" />
               Novo formulário
             </h2>
-            <form action={criarFormulario} className="space-y-3">
-              <div>
-                <label className={labelClass}>Secretaria</label>
-                <select name="secretaria_id" required defaultValue="" className={inputClass}>
-                  <option value="" disabled>
-                    Selecione a secretaria...
-                  </option>
-                  {secretarias.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.sigla} — {s.nome}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className={labelClass}>Nome do formulário</label>
-                <input name="nome" required placeholder="Ex: Retorno ao lar — SEDES" className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Descrição (opcional)</label>
-                <input name="descricao" placeholder="Descrição" className={inputClass} />
-              </div>
-              <button
-                type="submit"
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover"
-              >
-                <PlusCircle className="size-4" />
-                Criar formulário
-              </button>
-            </form>
+            <NovoFormularioForm secretarias={secretarias} />
           </div>
 
           <div className="mt-4 space-y-2">
@@ -438,5 +312,234 @@ export function AdminClient({
         </div>
       )}
     </div>
+  );
+}
+
+function NovoUsuarioForm({ secretarias }: { secretarias: SecretariaAdmin[] }) {
+  const [state, formAction, pending] = useActionState(criarUsuario, null);
+
+  return (
+    <form action={formAction} className="mt-2 space-y-3 rounded-2xl bg-surface p-4 shadow-card">
+      <div className="grid grid-cols-1 gap-3">
+        <div>
+          <label className={labelClass}>Nome completo</label>
+          <input name="nome" required placeholder="Nome completo" className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>Email</label>
+          <input name="email" type="email" required placeholder="voce@secretaria.gov.br" className={inputClass} />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className={labelClass}>CPF</label>
+            <input
+              name="cpf"
+              inputMode="numeric"
+              placeholder="000.000.000-00"
+              onInput={(e) => (e.currentTarget.value = maskCPF(e.currentTarget.value))}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Telefone</label>
+            <input
+              name="telefone"
+              inputMode="tel"
+              placeholder="(61) 90000-0000"
+              onInput={(e) => (e.currentTarget.value = maskPhone(e.currentTarget.value))}
+              className={inputClass}
+            />
+          </div>
+        </div>
+        <div>
+          <label className={labelClass}>Senha inicial</label>
+          <input name="senha" type="password" required minLength={6} placeholder="Mín. 6 caracteres" className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>Papel</label>
+          <select name="role" required defaultValue="agente" className={inputClass}>
+            <option value="agente">Agente (preenche formulários)</option>
+            <option value="editor">Editor (cria perguntas)</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div>
+          <label className={labelClass}>Secretaria</label>
+          <select name="secretaria_id" defaultValue="" className={inputClass}>
+            <option value="">Sem secretaria</option>
+            {secretarias.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.sigla} — {s.nome}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <FormFeedback state={state} />
+
+      <SubmitButton pending={pending}>
+        {pending ? "Criando..." : (
+          <>
+            <PlusCircle className="size-4" />
+            Criar usuário
+          </>
+        )}
+      </SubmitButton>
+    </form>
+  );
+}
+
+function EditarUsuarioForm({
+  usuario,
+  secretarias,
+}: {
+  usuario: UsuarioAdmin;
+  secretarias: SecretariaAdmin[];
+}) {
+  const [state, formAction, pending] = useActionState(atualizarUsuario, null);
+
+  return (
+    <form action={formAction} className="space-y-3 border-t border-border px-4 py-4">
+      <input type="hidden" name="user_id" value={usuario.id} />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelClass}>CPF</label>
+          <input
+            name="cpf"
+            inputMode="numeric"
+            defaultValue={usuario.cpf ?? ""}
+            onInput={(e) => (e.currentTarget.value = maskCPF(e.currentTarget.value))}
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className={labelClass}>Telefone</label>
+          <input
+            name="telefone"
+            inputMode="tel"
+            defaultValue={usuario.telefone ?? ""}
+            onInput={(e) => (e.currentTarget.value = maskPhone(e.currentTarget.value))}
+            className={inputClass}
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-3">
+        <div>
+          <label className={labelClass}>Papel</label>
+          <select name="role" defaultValue={usuario.role} className={inputClass}>
+            <option value="agente">Agente (preenche formulários)</option>
+            <option value="editor">Editor (cria perguntas)</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div>
+          <label className={labelClass}>Secretaria</label>
+          <select name="secretaria_id" defaultValue={usuario.secretaria_id ?? ""} className={inputClass}>
+            <option value="">Sem secretaria</option>
+            {secretarias.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.sigla} — {s.nome}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={labelClass}>
+            <span className="flex items-center gap-1">
+              <KeyRound className="size-3.5" />
+              Nova senha <span className="font-normal text-slate-400">(deixe vazio para manter)</span>
+            </span>
+          </label>
+          <input
+            name="senha"
+            type="password"
+            minLength={6}
+            placeholder="Mín. 6 caracteres"
+            className={inputClass}
+          />
+        </div>
+      </div>
+
+      <FormFeedback state={state} />
+
+      <SubmitButton pending={pending}>
+        {pending ? "Salvando..." : (
+          <>
+            <Pencil className="size-4" />
+            Salvar alterações
+          </>
+        )}
+      </SubmitButton>
+    </form>
+  );
+}
+
+function NovaSecretariaForm() {
+  const [state, formAction, pending] = useActionState(criarSecretaria, null);
+
+  return (
+    <form action={formAction} className="space-y-3">
+      <div>
+        <label className={labelClass}>Nome</label>
+        <input name="nome" required placeholder="Ex: Secretaria de Desenvolvimento Social" className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Sigla</label>
+        <input name="sigla" required placeholder="Ex: SEDES" className={inputClass} />
+      </div>
+
+      <FormFeedback state={state} />
+
+      <SubmitButton pending={pending}>
+        {pending ? "Adicionando..." : (
+          <>
+            <PlusCircle className="size-4" />
+            Adicionar secretaria
+          </>
+        )}
+      </SubmitButton>
+    </form>
+  );
+}
+
+function NovoFormularioForm({ secretarias }: { secretarias: SecretariaAdmin[] }) {
+  const [state, formAction, pending] = useActionState(criarFormulario, null);
+
+  return (
+    <form action={formAction} className="space-y-3">
+      <div>
+        <label className={labelClass}>Secretaria</label>
+        <select name="secretaria_id" required defaultValue="" className={inputClass}>
+          <option value="" disabled>
+            Selecione a secretaria...
+          </option>
+          {secretarias.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.sigla} — {s.nome}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className={labelClass}>Nome do formulário</label>
+        <input name="nome" required placeholder="Ex: Retorno ao lar — SEDES" className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Descrição (opcional)</label>
+        <input name="descricao" placeholder="Descrição" className={inputClass} />
+      </div>
+
+      <FormFeedback state={state} />
+
+      <SubmitButton pending={pending}>
+        {pending ? "Criando..." : (
+          <>
+            <PlusCircle className="size-4" />
+            Criar formulário
+          </>
+        )}
+      </SubmitButton>
+    </form>
   );
 }

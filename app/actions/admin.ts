@@ -6,9 +6,16 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { onlyDigits } from "@/lib/masks";
 
-export async function criarSecretaria(formData: FormData) {
+export type ActionState = { ok: boolean; message: string } | null;
+
+export async function criarSecretaria(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
   const { profile } = await requireProfile();
-  if (profile.role !== "admin") return;
+  if (profile.role !== "admin") {
+    return { ok: false, message: "Acesso negado." };
+  }
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -18,13 +25,22 @@ export async function criarSecretaria(formData: FormData) {
       sigla: String(formData.get("sigla")).toUpperCase(),
     });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
   revalidatePath("/admin");
+  return { ok: true, message: "Secretaria criada com sucesso." };
 }
 
-export async function criarFormulario(formData: FormData) {
+export async function criarFormulario(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
   const { profile } = await requireProfile();
-  if (profile.role !== "admin") return;
+  if (profile.role !== "admin") {
+    return { ok: false, message: "Acesso negado." };
+  }
 
   const supabase = await createClient();
   const secretariaId = String(formData.get("secretaria_id"));
@@ -34,13 +50,22 @@ export async function criarFormulario(formData: FormData) {
     descricao: formData.get("descricao") || null,
   });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
   revalidatePath("/admin");
+  return { ok: true, message: "Formulário criado com sucesso." };
 }
 
-export async function criarUsuario(formData: FormData) {
+export async function criarUsuario(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
   const { profile } = await requireProfile();
-  if (profile.role !== "admin") return;
+  if (profile.role !== "admin") {
+    return { ok: false, message: "Acesso negado." };
+  }
 
   const nome = String(formData.get("nome"));
   const email = String(formData.get("email"));
@@ -51,7 +76,7 @@ export async function criarUsuario(formData: FormData) {
   const telefone = onlyDigits(String(formData.get("telefone") ?? "")) || null;
 
   if (!nome || !email || senha.length < 6) {
-    throw new Error("Preencha nome, email e senha (mín. 6 caracteres).");
+    return { ok: false, message: "Preencha nome, email e senha (mín. 6 caracteres)." };
   }
 
   const admin = createAdminClient();
@@ -62,15 +87,25 @@ export async function criarUsuario(formData: FormData) {
     user_metadata: { full_name: nome, role, secretaria_id: secretariaId, cpf, telefone },
   });
 
-  if (error) throw new Error(error.message);
-  if (!data.user) throw new Error("Não foi possível criar o usuário.");
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+  if (!data.user) {
+    return { ok: false, message: "Não foi possível criar o usuário." };
+  }
 
   revalidatePath("/admin");
+  return { ok: true, message: `Usuário "${nome}" criado com sucesso.` };
 }
 
-export async function atualizarUsuario(formData: FormData) {
+export async function atualizarUsuario(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
   const { profile } = await requireProfile();
-  if (profile.role !== "admin") return;
+  if (profile.role !== "admin") {
+    return { ok: false, message: "Acesso negado." };
+  }
 
   const userId = String(formData.get("user_id"));
   const senha = String(formData.get("senha"));
@@ -79,19 +114,23 @@ export async function atualizarUsuario(formData: FormData) {
   const cpf = onlyDigits(String(formData.get("cpf") ?? "")) || null;
   const telefone = onlyDigits(String(formData.get("telefone") ?? "")) || null;
 
-  if (!userId) return;
+  if (!userId) {
+    return { ok: false, message: "Usuário inválido." };
+  }
 
   const admin = createAdminClient();
   const supabase = await createClient();
 
   if (senha) {
     if (senha.length < 6) {
-      throw new Error("A nova senha precisa de no mínimo 6 caracteres.");
+      return { ok: false, message: "A nova senha precisa de no mínimo 6 caracteres." };
     }
     const { error: passError } = await admin.auth.admin.updateUserById(userId, {
       password: senha,
     });
-    if (passError) throw new Error(passError.message);
+    if (passError) {
+      return { ok: false, message: passError.message };
+    }
   }
 
   const { error } = await supabase
@@ -99,7 +138,10 @@ export async function atualizarUsuario(formData: FormData) {
     .update({ role, secretaria_id: secretariaId, cpf, telefone })
     .eq("id", userId);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    return { ok: false, message: error.message };
+  }
 
   revalidatePath("/admin");
+  return { ok: true, message: "Usuário atualizado com sucesso." };
 }
