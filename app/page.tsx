@@ -117,7 +117,7 @@ export default async function HomePage() {
         : [
             {
               href: "/admin",
-              title: "Gerenciar usuários",
+              title: "Área do Administrador",
               description: "Secretarias, perfis e acessos",
               icon: Users,
               tone: "from-primary to-primary-dark",

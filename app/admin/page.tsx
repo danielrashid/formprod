@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { requireProfile } from "@/app/actions/auth";
-import { AppShell, NavItem, EmptyState } from "@/components/ui";
+import { AppShell, NavItem } from "@/components/ui";
 import { AdminClient, type SecretariaAdmin, type UsuarioAdmin, type FormAdmin } from "@/app/admin/admin-client";
 import {
   Home,
@@ -72,14 +72,6 @@ export default async function AdminPage() {
         emails={emails}
         forms={(forms ?? []) as unknown as FormAdmin[]}
       />
-
-      <div className="mt-8">
-        <EmptyState
-          icon={<Settings2 className="size-8" />}
-          title="Dica"
-          description="Use as abas acima para organizar usuários, secretarias e formulários. Para editar um usuário, toque no ícone de lápis."
-        />
-      </div>
     </AppShell>
   );
 }

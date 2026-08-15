@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import {
   Building2,
   CheckCircle2,
@@ -79,6 +79,16 @@ function FormFeedback({ state }: { state: ActionState }) {
       <span>{state.message}</span>
     </div>
   );
+}
+
+function useAutoClose(state: ActionState, onSuccess: () => void) {
+  const closed = useRef(false);
+  useEffect(() => {
+    if (state?.ok && !closed.current) {
+      closed.current = true;
+      onSuccess();
+    }
+  }, [state, onSuccess]);
 }
 
 function SubmitButton({
@@ -165,7 +175,7 @@ export function AdminClient({
           </button>
 
           {novoUsuarioAberto && (
-            <NovoUsuarioForm secretarias={secretarias} />
+            <NovoUsuarioForm secretarias={secretarias} onSuccess={() => setNovoUsuarioAberto(false)} />
           )}
 
           <div className="mt-4 space-y-2">
@@ -229,7 +239,7 @@ export function AdminClient({
                 </div>
 
                 {openId === u.id && (
-                  <EditarUsuarioForm usuario={u} secretarias={secretarias} />
+                  <EditarUsuarioForm usuario={u} secretarias={secretarias} onSuccess={() => setOpenId(null)} />
                 )}
               </div>
             ))}
@@ -315,8 +325,9 @@ export function AdminClient({
   );
 }
 
-function NovoUsuarioForm({ secretarias }: { secretarias: SecretariaAdmin[] }) {
+function NovoUsuarioForm({ secretarias, onSuccess }: { secretarias: SecretariaAdmin[]; onSuccess: () => void }) {
   const [state, formAction, pending] = useActionState(criarUsuario, null);
+  useAutoClose(state, onSuccess);
 
   return (
     <form action={formAction} className="mt-2 space-y-3 rounded-2xl bg-surface p-4 shadow-card">
@@ -393,11 +404,14 @@ function NovoUsuarioForm({ secretarias }: { secretarias: SecretariaAdmin[] }) {
 function EditarUsuarioForm({
   usuario,
   secretarias,
+  onSuccess,
 }: {
   usuario: UsuarioAdmin;
   secretarias: SecretariaAdmin[];
+  onSuccess: () => void;
 }) {
   const [state, formAction, pending] = useActionState(atualizarUsuario, null);
+  useAutoClose(state, onSuccess);
 
   return (
     <form action={formAction} className="space-y-3 border-t border-border px-4 py-4">
