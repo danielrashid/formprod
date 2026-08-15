@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
-import { ClipboardPen, Eye, EyeOff, Loader2, LogIn, ShieldCheck, MapPin, Users } from "lucide-react";
+import { Eye, EyeOff, Loader2, LogIn, ShieldCheck, MapPin, Users } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -46,10 +47,15 @@ export default function LoginPage() {
 
         <div className="relative mx-auto w-full max-w-sm">
           <div className="mb-8 flex flex-col items-center text-center">
-            <div className="mb-4 grid size-16 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-xl ring-4 ring-white/10">
-              <ClipboardPen className="size-8" />
-            </div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">DFLegal</h1>
+            <Image
+              src="/logo.png"
+              alt="DF-Legal"
+              width={429}
+              height={582}
+              priority
+              className="mb-4 h-28 w-auto drop-shadow-xl"
+            />
+            <h1 className="text-3xl font-bold tracking-tight text-white">DF-Legal</h1>
             <p className="mt-1 text-sm text-white/60">
               Governo do Distrito Federal
             </p>

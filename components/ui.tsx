@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { logout } from "@/app/actions/auth";
 import {
   ClipboardList,
@@ -6,7 +7,6 @@ import {
   LayoutDashboard,
   LogOut,
   ShieldCheck,
-  ClipboardPen,
 } from "lucide-react";
 
 export type UserRole = "admin" | "editor" | "agente";
@@ -14,12 +14,17 @@ export type UserRole = "admin" | "editor" | "agente";
 export function Logo({ small }: { small?: boolean }) {
   return (
     <div className="flex items-center gap-2.5">
-      <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-md">
-        <ClipboardPen className="size-5" />
-      </div>
+      <Image
+        src="/logo.png"
+        alt="DF-Legal"
+        width={429}
+        height={582}
+        priority
+        className="h-9 w-auto rounded-lg object-contain"
+      />
       {!small && (
         <div className="leading-tight">
-          <p className="text-base font-bold tracking-tight text-white">DFLegal</p>
+          <p className="text-base font-bold tracking-tight text-white">DF-Legal</p>
           <p className="text-[11px] font-medium text-white/70">
             Levantamento social
           </p>

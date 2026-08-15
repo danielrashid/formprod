@@ -1,5 +1,5 @@
 -- ============================================================
--- Schema inicial — DFLegal (levantamento por secretaria)
+-- Schema inicial — DF-Legal (levantamento por secretaria)
 -- ============================================================
 
 create extension if not exists "pgcrypto";
