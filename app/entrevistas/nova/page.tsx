@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { requireProfile } from "@/app/actions/auth";
+import { requireProfile, isMaster } from "@/app/actions/auth";
 
 export default async function NovaEntrevistaPage({
   searchParams,
@@ -7,6 +7,7 @@ export default async function NovaEntrevistaPage({
   searchParams: Promise<{ form?: string }>;
 }) {
   const { supabase, profile } = await requireProfile();
+  const master = await isMaster();
   const { form: formId } = await searchParams;
 
   if (!formId) {
@@ -15,12 +16,16 @@ export default async function NovaEntrevistaPage({
 
   const { data: form } = await supabase
     .from("forms")
-    .select("id, nome")
+    .select("id, nome, secretaria_id")
     .eq("id", formId)
     .eq("ativo", true)
     .single();
 
   if (!form) {
+    redirect("/entrevistas");
+  }
+
+  if (!master && form.secretaria_id !== profile.secretaria_id) {
     redirect("/entrevistas");
   }
 

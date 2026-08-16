@@ -32,3 +32,9 @@ export async function requireProfile() {
 
   return { supabase, user, profile };
 }
+
+export async function isMaster() {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("is_master");
+  return data === true;
+}

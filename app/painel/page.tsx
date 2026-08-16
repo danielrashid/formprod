@@ -1,4 +1,4 @@
-import { requireProfile } from "@/app/actions/auth";
+import { requireProfile, isMaster } from "@/app/actions/auth";
 import { AppShell, NavItem, Card, Badge, SectionTitle, EmptyState } from "@/components/ui";
 import type { EntrevistaComFormEAgente } from "@/lib/types";
 import {
@@ -19,6 +19,7 @@ export const dynamic = "force-dynamic";
 export default async function PainelPage() {
   const { supabase, profile } = await requireProfile();
   const role = profile.role as UserRole;
+  const master = await isMaster();
 
   const query = supabase
     .from("entrevistas")
@@ -28,10 +29,9 @@ export default async function PainelPage() {
     .order("created_at", { ascending: false })
     .limit(100);
 
-  const { data: entrevistas } =
-    role === "admin"
-      ? await query
-      : await query.filter("forms.secretaria_id", "eq", profile.secretaria_id!);
+  const { data: entrevistas } = master
+    ? await query
+    : await query.filter("forms.secretaria_id", "eq", profile.secretaria_id!);
 
   const entrevistasData = (entrevistas ?? []) as unknown as EntrevistaComFormEAgente[];
 
@@ -51,7 +51,7 @@ export default async function PainelPage() {
     <AppShell
       title="Painel"
       subtitle={
-        role === "admin"
+        master
           ? "Entrevistas de todas as secretarias"
           : "Entrevistas da sua secretaria"
       }

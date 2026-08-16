@@ -23,22 +23,23 @@ import {
 interface Props {
   formId: string;
   formNome: string;
+  forms: { id: string; nome: string }[];
   questions: Question[];
 }
 
 const TIPOS: { value: QuestionType; label: string; icon: typeof Type }[] = [
   { value: "texto", label: "Texto", icon: Type },
+  { value: "opcao_unica", label: "Sim ou Não", icon: CheckCircle2 },
+  { value: "opcao_multipla", label: "Checkbox", icon: ListChecks },
   { value: "numero", label: "Número", icon: Hash },
   { value: "data", label: "Data", icon: Calendar },
-  { value: "opcao_unica", label: "Escolha única", icon: ListChecks },
-  { value: "opcao_multipla", label: "Múltipla escolha", icon: ListChecks },
   { value: "geoponto", label: "Localização (GPS)", icon: MapPin },
 ];
 
 const inputClass =
   "w-full rounded-xl border border-border bg-slate-50 px-3 py-2.5 text-sm text-foreground placeholder:text-slate-400 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20";
 
-export function GerenciarPerguntas({ formId, formNome, questions }: Props) {
+export function GerenciarPerguntas({ formId, formNome, forms, questions }: Props) {
   const router = useRouter();
   const [titulo, setTitulo] = useState("");
   const [tipo, setTipo] = useState<QuestionType>("texto");
@@ -53,6 +54,13 @@ export function GerenciarPerguntas({ formId, formNome, questions }: Props) {
   };
 
   const isOpcoes = tipo === "opcao_unica" || tipo === "opcao_multipla";
+
+  function selecionarTipo(novoTipo: QuestionType) {
+    setTipo(novoTipo);
+    if (novoTipo === "opcao_unica" && !opcoesTexto.trim()) {
+      setOpcoesTexto("Sim\nNão\nNão sei");
+    }
+  }
 
   async function criar() {
     if (!titulo.trim()) {
@@ -145,6 +153,25 @@ export function GerenciarPerguntas({ formId, formNome, questions }: Props) {
       </header>
 
       <div className="mx-auto max-w-xl px-4 pt-5">
+        {forms.length > 1 && (
+          <div className="mb-4">
+            <label className="mb-1.5 block text-xs font-semibold text-slate-600">
+              Formulário
+            </label>
+            <select
+              value={formId}
+              onChange={(e) => router.push(`/gerenciar-perguntas?form=${e.target.value}`)}
+              className={inputClass}
+            >
+              {forms.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.nome}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {msg && (
           <div
             className={`mb-4 rounded-xl px-3 py-2.5 text-sm ${
@@ -188,7 +215,7 @@ export function GerenciarPerguntas({ formId, formNome, questions }: Props) {
                   return (
                     <button
                       key={t.value}
-                      onClick={() => setTipo(t.value)}
+                      onClick={() => selecionarTipo(t.value)}
                       className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
                         active
                           ? "border-primary bg-primary-soft text-primary"

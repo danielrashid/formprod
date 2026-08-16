@@ -8,6 +8,7 @@ import {
   ClipboardList,
   FilePlus2,
   KeyRound,
+  ListChecks,
   Loader2,
   Mail,
   Pencil,
@@ -23,6 +24,7 @@ import {
   criarFormulario,
   criarUsuario,
   atualizarUsuario,
+  atualizarFormulario,
   type ActionState,
 } from "@/app/actions/admin";
 import { maskCPF, maskPhone } from "@/lib/masks";
@@ -46,6 +48,7 @@ export type UsuarioAdmin = {
 export type FormAdmin = {
   id: string;
   nome: string;
+  descricao: string | null;
   secretaria_id: string | null;
 };
 
@@ -124,6 +127,7 @@ export function AdminClient({
   const [tab, setTab] = useState<"usuarios" | "secretarias" | "formularios">("usuarios");
   const [openId, setOpenId] = useState<string | null>(null);
   const [novoUsuarioAberto, setNovoUsuarioAberto] = useState(false);
+  const [editFormId, setEditFormId] = useState<string | null>(null);
 
   const tabs = [
     { id: "usuarios" as const, label: "Usuários", icon: Users, count: usuarios.length },
@@ -302,14 +306,45 @@ export function AdminClient({
             {forms.map((f) => {
               const sec = secretarias.find((s) => s.id === f.secretaria_id);
               return (
-                <div key={f.id} className="flex items-center gap-3 rounded-2xl bg-surface p-3.5 shadow-card">
-                  <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
-                    <ClipboardList className="size-5" />
+                <div key={f.id} className="rounded-2xl bg-surface shadow-card">
+                  <div className="flex items-center gap-3 p-3.5">
+                    <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
+                      <ClipboardList className="size-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold text-foreground">{f.nome}</p>
+                      <p className="truncate text-xs text-muted">{sec ? `${sec.sigla} — ${sec.nome}` : "Sem secretaria"}</p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <a
+                        href={`/gerenciar-perguntas?form=${f.id}`}
+                        title="Editar perguntas"
+                        className="flex items-center gap-1 rounded-lg bg-primary-soft px-2.5 py-2 text-xs font-semibold text-primary transition hover:bg-primary/15"
+                      >
+                        <ListChecks className="size-4" />
+                        Perguntas
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => setEditFormId(editFormId === f.id ? null : f.id)}
+                        title="Editar formulário"
+                        className={`grid size-9 shrink-0 place-items-center rounded-lg transition ${
+                          editFormId === f.id
+                            ? "bg-primary text-white"
+                            : "bg-slate-100 text-slate-500 hover:text-primary"
+                        }`}
+                      >
+                        <Pencil className="size-4" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold text-foreground">{f.nome}</p>
-                    <p className="truncate text-xs text-muted">{sec ? `${sec.sigla} — ${sec.nome}` : "Sem secretaria"}</p>
-                  </div>
+                  {editFormId === f.id && (
+                    <EditarFormularioForm
+                      form={f}
+                      secretarias={secretarias}
+                      onSuccess={() => setEditFormId(null)}
+                    />
+                  )}
                 </div>
               );
             })}
@@ -551,6 +586,55 @@ function NovoFormularioForm({ secretarias }: { secretarias: SecretariaAdmin[] })
           <>
             <PlusCircle className="size-4" />
             Criar formulário
+          </>
+        )}
+      </SubmitButton>
+    </form>
+  );
+}
+
+function EditarFormularioForm({
+  form,
+  secretarias,
+  onSuccess,
+}: {
+  form: FormAdmin;
+  secretarias: SecretariaAdmin[];
+  onSuccess: () => void;
+}) {
+  const [state, formAction, pending] = useActionState(atualizarFormulario, null);
+  useAutoClose(state, onSuccess);
+
+  return (
+    <form action={formAction} className="space-y-3 border-t border-border px-4 py-4">
+      <input type="hidden" name="form_id" value={form.id} />
+      <div>
+        <label className={labelClass}>Nome do formulário</label>
+        <input name="nome" required defaultValue={form.nome} className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Descrição (opcional)</label>
+        <input name="descricao" defaultValue={form.descricao ?? ""} placeholder="Descrição" className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Secretaria</label>
+        <select name="secretaria_id" defaultValue={form.secretaria_id ?? ""} className={inputClass}>
+          <option value="">Sem secretaria</option>
+          {secretarias.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.sigla} — {s.nome}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <FormFeedback state={state} />
+
+      <SubmitButton pending={pending}>
+        {pending ? "Salvando..." : (
+          <>
+            <Pencil className="size-4" />
+            Salvar formulário
           </>
         )}
       </SubmitButton>

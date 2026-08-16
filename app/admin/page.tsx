@@ -42,7 +42,7 @@ export default async function AdminPage() {
 
   const { data: forms } = await supabase
     .from("forms")
-    .select("id, nome, secretaria_id")
+    .select("id, nome, descricao, secretaria_id")
     .order("nome");
 
   const emails: Record<string, string> = {};

@@ -58,6 +58,42 @@ export async function criarFormulario(
   return { ok: true, message: "Formulário criado com sucesso." };
 }
 
+export async function atualizarFormulario(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const { profile } = await requireProfile();
+  if (profile.role !== "admin") {
+    return { ok: false, message: "Acesso negado." };
+  }
+
+  const formId = String(formData.get("form_id"));
+  const secretariaId = String(formData.get("secretaria_id"));
+  const nome = String(formData.get("nome"));
+  const descricao = String(formData.get("descricao"));
+
+  if (!formId || !nome.trim()) {
+    return { ok: false, message: "Informe o nome do formulário." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("forms")
+    .update({
+      secretaria_id: secretariaId,
+      nome: nome.trim(),
+      descricao: descricao.trim() || null,
+    })
+    .eq("id", formId);
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  revalidatePath("/admin");
+  return { ok: true, message: "Formulário atualizado com sucesso." };
+}
+
 export async function criarUsuario(
   _prevState: ActionState,
   formData: FormData

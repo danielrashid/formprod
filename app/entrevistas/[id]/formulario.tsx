@@ -56,6 +56,7 @@ export function FormularioDinamico({
 }: Props) {
   const router = useRouter();
   const concluida = status === "concluida";
+  const temRascunho = (initialAnswers.size > 0 && !concluida) || (!concluida && observacoes != null && observacoes.trim() !== "");
 
   const [answers, setAnswers] = useState<Record<string, unknown>>(() => {
     const initial: Record<string, unknown> = {};
@@ -125,6 +126,34 @@ export function FormularioDinamico({
     setAnswers((prev) => ({ ...prev, [questionId]: valor }));
   }
 
+  async function voltarSemSalvar() {
+    if (concluida || temRascunho) {
+      router.push("/entrevistas");
+      router.refresh();
+      return;
+    }
+
+    const ok = window.confirm(
+      "A entrevista ainda não foi concluída. Ao sair, nada será registrado.\n\nClique em OK para voltar sem salvar."
+    );
+    if (!ok) return;
+
+    setMsg(null);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("entrevistas")
+      .delete()
+      .eq("id", entrevistaId);
+
+    if (error) {
+      showMsg("Não foi possível sair: " + error.message, "error");
+      return;
+    }
+
+    router.push("/entrevistas");
+    router.refresh();
+  }
+
   async function salvar(tipo: "rascunho" | "final") {
     setSaving(tipo);
     setMsg(null);
@@ -171,12 +200,8 @@ export function FormularioDinamico({
       return;
     }
 
-    if (tipo === "final") {
-      router.push("/entrevistas");
-      router.refresh();
-    } else {
-      showMsg("Rascunho salvo!", "ok");
-    }
+    router.push("/entrevistas");
+    router.refresh();
   }
 
   const current = questions[activeIndex];
@@ -191,7 +216,7 @@ export function FormularioDinamico({
         <div className="mx-auto flex max-w-xl items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => router.push("/entrevistas")}
+              onClick={voltarSemSalvar}
               className="grid size-10 place-items-center rounded-full bg-white/10 transition hover:bg-white/20"
               title="Voltar"
             >

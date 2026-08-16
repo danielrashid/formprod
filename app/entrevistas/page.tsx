@@ -1,4 +1,4 @@
-import { requireProfile } from "@/app/actions/auth";
+import { requireProfile, isMaster } from "@/app/actions/auth";
 import { AppShell, NavItem, Card, Badge, SectionTitle, EmptyState } from "@/components/ui";
 import type {
   EntrevistaComForm,
@@ -15,18 +15,25 @@ import {
   Map,
 } from "lucide-react";
 import type { UserRole } from "@/components/ui";
+import { ExcluirEntrevista } from "@/app/entrevistas/excluir";
 
 export const dynamic = "force-dynamic";
 
 export default async function EntrevistasPage() {
   const { supabase, profile } = await requireProfile();
+  const master = await isMaster();
   const role = profile.role as UserRole;
 
-  const { data: forms } = await supabase
+  let formsQuery = supabase
     .from("forms")
     .select("id, nome, descricao, secretaria_id, secretarias(nome, sigla)")
-    .eq("ativo", true)
-    .order("nome");
+    .eq("ativo", true);
+
+  if (!master) {
+    formsQuery = formsQuery.eq("secretaria_id", profile.secretaria_id ?? "__none__");
+  }
+
+  const { data: forms } = await formsQuery.order("nome");
 
   const formsData = (forms ?? []) as unknown as FormComSecretaria[];
 
@@ -100,40 +107,43 @@ export default async function EntrevistasPage() {
           {entrevistasData.map((e) => {
             const concluida = e.status === "concluida";
             return (
-              <a key={e.id} href={`/entrevistas/${e.id}`} className="group">
-                <Card className="flex items-center gap-3 p-4 transition group-hover:shadow-card-hover">
-                  <div
-                    className={`grid size-10 shrink-0 place-items-center rounded-full ${
-                      concluida
-                        ? "bg-success-soft text-success"
-                        : "bg-warning-soft text-warning"
-                    }`}
-                  >
-                    {concluida ? (
-                      <CheckCircle2 className="size-5" />
-                    ) : (
-                      <Clock className="size-5" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-foreground">
-                      {e.forms?.nome}
-                    </p>
-                    <p className="text-xs text-muted">
-                      {new Date(e.created_at).toLocaleString("pt-BR", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                  </div>
-                  <Badge tone={concluida ? "green" : "amber"}>
-                    {concluida ? "Concluída" : "Em andamento"}
-                  </Badge>
-                </Card>
-              </a>
+              <div key={e.id} className="flex items-center gap-2">
+                <a href={`/entrevistas/${e.id}`} className="group min-w-0 flex-1">
+                  <Card className="flex items-center gap-3 p-4 transition group-hover:shadow-card-hover">
+                    <div
+                      className={`grid size-10 shrink-0 place-items-center rounded-full ${
+                        concluida
+                          ? "bg-success-soft text-success"
+                          : "bg-warning-soft text-warning"
+                      }`}
+                    >
+                      {concluida ? (
+                        <CheckCircle2 className="size-5" />
+                      ) : (
+                        <Clock className="size-5" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-foreground">
+                        {e.forms?.nome}
+                      </p>
+                      <p className="text-xs text-muted">
+                        {new Date(e.created_at).toLocaleString("pt-BR", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                    <Badge tone={concluida ? "green" : "amber"}>
+                      {concluida ? "Concluída" : "Em andamento"}
+                    </Badge>
+                  </Card>
+                </a>
+                {!concluida && <ExcluirEntrevista id={e.id} />}
+              </div>
             );
           })}
           {entrevistasData.length === 0 && (
