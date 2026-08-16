@@ -12,6 +12,12 @@ const MapaPessoas = dynamic(() => import("@/app/mapa/mapa").then((m) => m.MapaPe
   ),
 });
 
-export function MapaClient({ pessoas }: { pessoas: Pessoa[] }) {
-  return <MapaPessoas pessoas={pessoas} />;
+export function MapaClient({
+  pessoas,
+  entrevistasPorPessoa,
+}: {
+  pessoas: Pessoa[];
+  entrevistasPorPessoa: Record<string, number>;
+}) {
+  return <MapaPessoas pessoas={pessoas} entrevistasPorPessoa={entrevistasPorPessoa} />;
 }

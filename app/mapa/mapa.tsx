@@ -10,9 +10,11 @@ import {
 import type { Map as LeafletMap } from "leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Logo } from "@/components/ui";
+import { Logo, Badge } from "@/components/ui";
+import { createClient } from "@/lib/supabase/client";
 import type { Pessoa, QuerVoltarEstado } from "@/lib/types";
 import { maskCPF } from "@/lib/masks";
+import { formatDateTimeBR } from "@/lib/dates";
 import {
   ArrowLeft,
   MapPin,
@@ -25,6 +27,10 @@ import {
   Stethoscope,
   MapPinned,
   User,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  Loader2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -40,14 +46,30 @@ function corPessoa(p: Pessoa): string {
   return COR_PADRAO;
 }
 
-function makeIcon(p: Pessoa, selecionada: boolean) {
-  const cor = corPessoa(p);
+function fundoPin(p: Pessoa): string {
+  const doenca = p.tem_doenca;
+  const retorno = p.quer_voltar_estado === "sim";
+  if (doenca && retorno) {
+    return `linear-gradient(135deg, ${COR_DOENCA} 50%, ${COR_RETORNO} 50%)`;
+  }
+  return corPessoa(p);
+}
+
+function makeIcon(p: Pessoa, selecionada: boolean, entrevistas?: number) {
+  const cor = fundoPin(p);
   const s = selecionada ? 1.2 : 1;
+  const badge =
+    entrevistas && entrevistas > 0
+      ? `<div style="position:absolute;right:-6px;bottom:-6px;min-width:18px;height:18px;border-radius:9999px;background:#16a34a;border:2px solid #fff;color:#fff;font-weight:800;font-size:11px;font-family:Arial,sans-serif;display:grid;place-items:center;padding:0 3px;">${
+          entrevistas > 9 ? "9+" : entrevistas
+        }</div>`
+      : "";
   return L.divIcon({
     className: "",
     html: `<div style="position:relative;width:${36 * s}px;height:${36 * s}px;">
       <div style="position:absolute;inset:0;background:${cor};border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 3px 8px rgba(0,0,0,.4);border:2px solid #fff;"></div>
       <div style="position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-weight:800;font-size:${15 * s}px;font-family:Arial,sans-serif;">${p.nome.charAt(0)}</div>
+      ${badge}
     </div>`,
     iconSize: [36 * s, 36 * s],
     iconAnchor: [18 * s, 36 * s],
@@ -80,11 +102,48 @@ const QUER_VOLTAR_LABEL: Record<QuerVoltarEstado, string> = {
   nao_sabe: "Não sabe",
 };
 
-export function MapaPessoas({ pessoas }: { pessoas: Pessoa[] }) {
+interface EntrevistaDetalhe {
+  id: string;
+  status: string;
+  created_at: string;
+  agente: string | null;
+  respostas: { pergunta: string; valor: string }[];
+}
+
+function formatarValor(v: unknown): string {
+  if (v == null) return "—";
+  if (Array.isArray(v)) return v.join(", ");
+  if (typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    if (
+      typeof o.lat === "number" &&
+      typeof o.lng === "number"
+    ) {
+      return `${o.lat.toFixed(5)}, ${o.lng.toFixed(5)}`;
+    }
+    return JSON.stringify(v);
+  }
+  return String(v);
+}
+
+function isImagem(v: string): boolean {
+  return /^https?:\/\/.+\.(jpe?g|png|webp|gif|heic|heif)(\?.*)?$/i.test(v);
+}
+
+export function MapaPessoas({
+  pessoas,
+  entrevistasPorPessoa,
+}: {
+  pessoas: Pessoa[];
+  entrevistasPorPessoa: Record<string, number>;
+}) {
   const router = useRouter();
   const [selecionada, setSelecionada] = useState<Pessoa | null>(null);
   const [filtroRA, setFiltroRA] = useState<string>("Todas");
   const [mapReady, setMapReady] = useState(false);
+  const [entrevistas, setEntrevistas] = useState<EntrevistaDetalhe[] | null>(null);
+  const [carregandoEntrevistas, setCarregandoEntrevistas] = useState(false);
+  const [expandido, setExpandido] = useState(false);
   const mapRef = useRef<LeafletMap | null>(null);
 
   const ras = useMemo(() => {
@@ -128,6 +187,40 @@ export function MapaPessoas({ pessoas }: { pessoas: Pessoa[] }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtroRA, mapReady]);
+
+  async function carregarEntrevistas(pessoaId: string) {
+    setCarregandoEntrevistas(true);
+    const supabase = createClient();
+    const { data } = await supabase.rpc("entrevistas_do_cidadao", {
+      cidadao_id: pessoaId,
+    });
+    const rows = (data ?? []) as Array<{
+      id: string;
+      status: string;
+      created_at: string;
+      agente_nome: string | null;
+      respostas: { pergunta: string; valor: unknown }[];
+    }>;
+    const lista: EntrevistaDetalhe[] = rows.map((e) => ({
+      id: e.id,
+      status: e.status,
+      created_at: e.created_at,
+      agente: e.agente_nome ?? null,
+      respostas: (e.respostas ?? []).map((r) => ({
+        pergunta: r.pergunta,
+        valor: formatarValor(r.valor),
+      })),
+    }));
+    setEntrevistas(lista);
+    setCarregandoEntrevistas(false);
+  }
+
+  function selecionar(p: Pessoa | null) {
+    setSelecionada(p);
+    setExpandido(false);
+    setEntrevistas(null);
+    if (p) carregarEntrevistas(p.id);
+  }
 
   return (
     <main className="flex h-dvh flex-col bg-slate-900">
@@ -188,25 +281,25 @@ export function MapaPessoas({ pessoas }: { pessoas: Pessoa[] }) {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          <ClickHandler onSelect={setSelecionada} />
+          <ClickHandler onSelect={selecionar} />
           <FlyTo target={target} />
           {filtradas.map((p) => (
             <Marker
               key={p.id}
               position={[p.latitude, p.longitude]}
-              icon={makeIcon(p, selecionada?.id === p.id)}
-              eventHandlers={{ click: () => setSelecionada(p) }}
+              icon={makeIcon(p, selecionada?.id === p.id, entrevistasPorPessoa[p.id] ?? 0)}
+              eventHandlers={{ click: () => selecionar(p) }}
             />
           ))}
         </MapContainer>
 
         {filtradas.length === 0 && (
-          <div className="absolute inset-x-0 top-4 mx-auto w-fit rounded-xl bg-slate-900/80 px-4 py-2 text-sm text-white backdrop-blur">
+          <div className="absolute inset-x-0 top-4 z-[800] mx-auto w-fit rounded-xl bg-slate-900/80 px-4 py-2 text-sm text-white backdrop-blur">
             Nenhum registro nesta região.
           </div>
         )}
 
-        <div className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2">
+        <div className="pointer-events-none absolute left-1/2 top-3 z-[800] -translate-x-1/2">
           <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-slate-900/85 px-4 py-2 text-xs font-medium text-white shadow-lg backdrop-blur">
             <span className="flex items-center gap-1">
               <span className="inline-block size-2.5 rounded-full" style={{ background: COR_RETORNO }} />
@@ -260,7 +353,7 @@ export function MapaPessoas({ pessoas }: { pessoas: Pessoa[] }) {
                 </div>
               </div>
               <button
-                onClick={() => setSelecionada(null)}
+                onClick={() => selecionar(null)}
                 className="grid size-9 place-items-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200"
                 title="Fechar"
               >
@@ -348,6 +441,90 @@ export function MapaPessoas({ pessoas }: { pessoas: Pessoa[] }) {
                   Google Maps
                 </a>
               </div>
+            </div>
+
+            <div className="mt-5 border-t border-border pt-4">
+              <div className="flex items-center justify-between">
+                <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                  <FileText className="size-4 text-primary" />
+                  Entrevistas
+                  {entrevistas && (
+                    <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs font-bold text-primary">
+                      {entrevistas.length}
+                    </span>
+                  )}
+                </p>
+                {entrevistas && entrevistas.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setExpandido((v) => !v)}
+                    className="flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-slate-200"
+                  >
+                    {expandido ? "Recolher" : "Expandir"}
+                    {expandido ? (
+                      <ChevronUp className="size-3.5" />
+                    ) : (
+                      <ChevronDown className="size-3.5" />
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {carregandoEntrevistas && (
+                <p className="mt-3 flex items-center gap-2 text-xs font-medium text-muted">
+                  <Loader2 className="size-3.5 animate-spin" /> Carregando entrevistas...
+                </p>
+              )}
+
+              {!carregandoEntrevistas && entrevistas && entrevistas.length === 0 && (
+                <p className="mt-3 text-xs text-muted">
+                  Nenhuma entrevista vinculada a este cidadão.
+                </p>
+              )}
+
+              {expandido && entrevistas && entrevistas.length > 0 && (
+                <div className="mt-3 space-y-3">
+                  {entrevistas.map((e) => (
+                    <div
+                      key={e.id}
+                      className="rounded-xl border border-border bg-slate-50 p-3"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs font-bold text-foreground">
+                          {formatDateTimeBR(e.created_at)}
+                        </p>
+                        <Badge tone={e.status === "concluida" ? "green" : "amber"}>
+                          {e.status === "concluida" ? "Concluída" : "Em andamento"}
+                        </Badge>
+                      </div>
+                      <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                        <User className="size-3" />
+                        {e.agente ?? "Agente desconhecido"}
+                      </p>
+                      <div className="mt-2 space-y-1.5">
+                        {e.respostas.map((r, i) => (
+                          <div key={i} className="text-xs">
+                            <p className="font-medium text-slate-600">{r.pergunta}</p>
+                            {isImagem(r.valor) ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={r.valor}
+                                alt={r.pergunta}
+                                className="mt-1 max-h-40 w-full rounded-lg object-cover"
+                              />
+                            ) : (
+                              <p className="leading-relaxed text-foreground">{r.valor}</p>
+                            )}
+                          </div>
+                        ))}
+                        {e.respostas.length === 0 && (
+                          <p className="text-xs italic text-muted">Sem respostas salvas.</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}

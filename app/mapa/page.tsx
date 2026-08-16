@@ -21,5 +21,14 @@ export default async function MapaPage() {
     .select("*")
     .order("nome");
 
-  return <MapaClient pessoas={(pessoas ?? []) as Pessoa[]} />;
+  const { data: contagem } = await supabase.rpc("contagem_entrevistas_cidadaos");
+  const entrevistasPorPessoa: Record<string, number> =
+    (contagem as Record<string, number> | null) ?? {};
+
+  return (
+    <MapaClient
+      pessoas={(pessoas ?? []) as Pessoa[]}
+      entrevistasPorPessoa={entrevistasPorPessoa}
+    />
+  );
 }
