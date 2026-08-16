@@ -41,7 +41,7 @@ export default async function EntrevistasPage() {
 
   const { data: entrevistas } = await supabase
     .from("entrevistas")
-    .select("id, status, created_at, updated_at, forms(nome)")
+    .select("id, status, created_at, updated_at, forms(nome), pessoas(nome, foto_url)")
     .eq("agente_id", profile.id)
     .order("created_at", { ascending: false })
     .limit(50);
@@ -115,24 +115,36 @@ export default async function EntrevistasPage() {
               <div key={e.id} className="flex items-center gap-2">
                 <a href={`/entrevistas/${e.id}`} className="group min-w-0 flex-1">
                   <Card className="flex items-center gap-3 p-4 transition group-hover:shadow-card-hover">
-                    <div
-                      className={`grid size-10 shrink-0 place-items-center rounded-full ${
-                        concluida
-                          ? "bg-success-soft text-success"
-                          : "bg-warning-soft text-warning"
-                      }`}
-                    >
-                      {concluida ? (
-                        <CheckCircle2 className="size-5" />
-                      ) : (
-                        <Clock className="size-5" />
-                      )}
-                    </div>
+                    {e.pessoas?.foto_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={e.pessoas.foto_url}
+                        alt=""
+                        className="size-10 shrink-0 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div
+                        className={`grid size-10 shrink-0 place-items-center rounded-full ${
+                          concluida
+                            ? "bg-success-soft text-success"
+                            : "bg-warning-soft text-warning"
+                        }`}
+                      >
+                        {concluida ? (
+                          <CheckCircle2 className="size-5" />
+                        ) : (
+                          <Clock className="size-5" />
+                        )}
+                      </div>
+                    )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium text-foreground">
-                        {e.forms?.nome}
+                        {e.pessoas?.nome ?? e.forms?.nome}
                       </p>
-                      <p className="text-xs text-muted">
+                      <p className="truncate text-xs text-muted">
+                        {e.pessoas ? e.forms?.nome : formatDateTimeBR(e.created_at)}
+                      </p>
+                      <p className="truncate text-xs text-muted">
                         {formatDateTimeBR(e.created_at)}
                       </p>
                     </div>

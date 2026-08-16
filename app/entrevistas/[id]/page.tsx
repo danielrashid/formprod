@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireProfile, isMaster } from "@/app/actions/auth";
 import { FormularioDinamico } from "@/app/entrevistas/[id]/formulario";
-import type { EntrevistaComForm, Question } from "@/lib/types";
+import type { EntrevistaComForm, Pessoa, Question } from "@/lib/types";
 import type { UserRole } from "@/components/ui";
 
 export default async function EntrevistaPage({
@@ -15,7 +15,7 @@ export default async function EntrevistaPage({
   const { data: entrevista } = await supabase
     .from("entrevistas")
     .select(
-      "id, status, observacoes, latitude, longitude, agente_id, forms(id, nome)"
+      "id, status, observacoes, latitude, longitude, agente_id, pessoa_id, forms(id, nome)"
     )
     .eq("id", id)
     .single();
@@ -28,6 +28,16 @@ export default async function EntrevistaPage({
 
   if (!entrevistaData.forms) {
     redirect("/entrevistas");
+  }
+
+  let pessoa: Pessoa | null = null;
+  if (entrevistaData.pessoa_id) {
+    const { data: pessoaData } = await supabase
+      .from("pessoas")
+      .select("*")
+      .eq("id", entrevistaData.pessoa_id)
+      .single();
+    pessoa = (pessoaData as Pessoa | null) ?? null;
   }
 
   const ehDono = entrevistaData.agente_id === profile.id;
@@ -82,6 +92,7 @@ export default async function EntrevistaPage({
       questions={questionsData}
       initialAnswers={answersMap}
       voltarPara={visualizando ? "/painel" : "/entrevistas"}
+      pessoa={pessoa}
     />
   );
 }

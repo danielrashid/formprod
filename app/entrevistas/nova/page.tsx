@@ -1,5 +1,9 @@
 import { redirect } from "next/navigation";
 import { requireProfile, isMaster } from "@/app/actions/auth";
+import { NovaEntrevistaClient } from "@/app/entrevistas/nova/nova-client";
+import type { Pessoa } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
 
 export default async function NovaEntrevistaPage({
   searchParams,
@@ -29,15 +33,17 @@ export default async function NovaEntrevistaPage({
     redirect("/entrevistas");
   }
 
-  const { data, error } = await supabase
-    .from("entrevistas")
-    .insert({ form_id: form.id, agente_id: profile.id })
-    .select("id")
-    .single();
+  const { data: pessoas } = await supabase
+    .from("pessoas")
+    .select("*")
+    .order("nome");
 
-  if (error || !data) {
-    redirect("/entrevistas");
-  }
-
-  redirect(`/entrevistas/${data.id}`);
+  return (
+    <NovaEntrevistaClient
+      formId={form.id}
+      formNome={form.nome}
+      agenteId={profile.id}
+      pessoas={(pessoas ?? []) as Pessoa[]}
+    />
+  );
 }

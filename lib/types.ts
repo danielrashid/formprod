@@ -39,6 +39,7 @@ export interface Entrevista {
   id: string;
   form_id: string;
   agente_id: string;
+  pessoa_id: string | null;
   status: "em_andamento" | "concluida";
   latitude: number | null;
   longitude: number | null;
@@ -58,6 +59,7 @@ export interface FormComSecretaria extends Form {
 
 export interface EntrevistaComForm extends Entrevista {
   forms: Pick<Form, "id" | "nome"> | null;
+  pessoas?: { nome: string; foto_url: string | null } | null;
 }
 
 export interface EntrevistaComFormEAgente extends EntrevistaComForm {

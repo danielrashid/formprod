@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { Question, QuestionType } from "@/lib/types";
+import type { Pessoa, Question, QuestionType } from "@/lib/types";
 import { Logo, Badge } from "@/components/ui";
 import {
   ArrowLeft,
@@ -22,6 +22,9 @@ import {
   Camera,
   Image as ImageIcon,
   Trash2,
+  User,
+  Stethoscope,
+  Home,
 } from "lucide-react";
 
 interface Props {
@@ -34,6 +37,7 @@ interface Props {
   questions: Question[];
   initialAnswers: Map<string, unknown>;
   voltarPara?: string;
+  pessoa?: Pessoa | null;
 }
 
 const TIPOS: Record<QuestionType, { label: string; icon: typeof Type }> = {
@@ -59,6 +63,7 @@ export function FormularioDinamico({
   questions,
   initialAnswers,
   voltarPara = "/entrevistas",
+  pessoa = null,
 }: Props) {
   const router = useRouter();
   const concluida = status === "concluida";
@@ -264,6 +269,47 @@ export function FormularioDinamico({
             }`}
           >
             {msg.text}
+          </div>
+        )}
+
+        {/* Cidadão vinculado */}
+        {pessoa && (
+          <div className="mb-5 overflow-hidden rounded-2xl bg-surface shadow-card">
+            <div className="flex items-center gap-3 p-4">
+              {pessoa.foto_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={pessoa.foto_url}
+                  alt=""
+                  className="size-12 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <div className="grid size-12 shrink-0 place-items-center rounded-full bg-primary-soft text-primary">
+                  <User className="size-6" />
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-medium text-muted">Cidadão vinculado</p>
+                <p className="truncate font-semibold text-foreground">{pessoa.nome}</p>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {pessoa.tem_doenca && (
+                    <Badge tone="amber">
+                      <Stethoscope className="size-3" /> Doença
+                    </Badge>
+                  )}
+                  {pessoa.quer_voltar_estado === "sim" && (
+                    <Badge tone="blue">
+                      <Home className="size-3" /> Quer voltar
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+            {pessoa.observacoes && (
+              <p className="border-t border-border px-4 py-2.5 text-xs text-muted">
+                {pessoa.observacoes}
+              </p>
+            )}
           </div>
         )}
 
