@@ -18,6 +18,7 @@ import {
   Calendar,
   MapPin,
   CheckCircle2,
+  Camera,
 } from "lucide-react";
 
 interface Props {
@@ -34,6 +35,7 @@ const TIPOS: { value: QuestionType; label: string; icon: typeof Type }[] = [
   { value: "numero", label: "Número", icon: Hash },
   { value: "data", label: "Data", icon: Calendar },
   { value: "geoponto", label: "Localização (GPS)", icon: MapPin },
+  { value: "foto", label: "Foto", icon: Camera },
 ];
 
 const inputClass =
@@ -132,8 +134,8 @@ export function GerenciarPerguntas({ formId, formNome, forms, questions }: Props
   }
 
   return (
-    <main className="min-h-screen bg-slate-900 pb-28">
-      <header className="bg-gradient-to-br from-slate-900 via-primary-dark to-primary pb-5 pt-4 text-white shadow-lg">
+    <main className="min-h-screen bg-slate-900 pb-[calc(env(safe-area-inset-bottom)+4rem)]">
+      <header className="bg-gradient-to-br from-slate-900 via-primary-dark to-primary pb-5 pt-[calc(env(safe-area-inset-top)+0.5rem)] text-white shadow-lg">
         <div className="mx-auto flex max-w-xl items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <button

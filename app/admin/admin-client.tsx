@@ -402,7 +402,7 @@ function NovoUsuarioForm({ secretarias, onSuccess }: { secretarias: SecretariaAd
           <input name="senha" type="password" required minLength={6} placeholder="Mín. 6 caracteres" className={inputClass} />
         </div>
         <div>
-          <label className={labelClass}>Papel</label>
+          <label className={labelClass}>Perfil</label>
           <select name="role" required defaultValue="agente" className={inputClass}>
             <option value="agente">Agente (preenche formulários)</option>
             <option value="editor">Editor (cria perguntas)</option>
@@ -475,7 +475,7 @@ function EditarUsuarioForm({
       </div>
       <div className="grid grid-cols-1 gap-3">
         <div>
-          <label className={labelClass}>Papel</label>
+          <label className={labelClass}>Perfil</label>
           <select name="role" defaultValue={usuario.role} className={inputClass}>
             <option value="agente">Agente (preenche formulários)</option>
             <option value="editor">Editor (cria perguntas)</option>

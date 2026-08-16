@@ -165,11 +165,11 @@ export default async function HomePage() {
               ? "Pronto para realizar o levantamento?"
               : role === "editor"
                 ? "Formulário pronto para revisão"
-                : "Controle geral do sistema"}
+                : "Serviço integrado - Monitora DF"}
           </h2>
           <div className="mt-4 flex flex-wrap gap-2">
             <Badge tone="blue">
-              <span className="text-slate-500">Papel:</span>
+              <span className="text-slate-500">Perfil:</span>
               <span className="font-semibold text-slate-900">{roleLabel[role]}</span>
             </Badge>
             {secretaria && (
@@ -183,7 +183,7 @@ export default async function HomePage() {
       </section>
 
       <SectionTitle>Acesso rápido</SectionTitle>
-      <div className="grid gap-3">
+      <div className="grid grid-cols-1 gap-3">
         {quickActions.map((action) => (
           <a key={action.title} href={action.href} className="group">
             <Card className="flex items-center gap-4 p-4 transition group-hover:shadow-card-hover">

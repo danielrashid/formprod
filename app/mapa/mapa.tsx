@@ -132,7 +132,7 @@ export function MapaPessoas({ pessoas }: { pessoas: Pessoa[] }) {
   return (
     <main className="flex h-dvh flex-col bg-slate-900">
       <header className="bg-gradient-to-br from-slate-900 via-primary-dark to-primary text-white shadow-lg">
-        <div className="mx-auto flex max-w-xl items-center justify-between px-4 pb-4 pt-4">
+        <div className="mx-auto flex max-w-xl items-center justify-between px-4 pt-[calc(env(safe-area-inset-top)+0.5rem)] pb-4">
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push("/")}
@@ -230,7 +230,17 @@ export function MapaPessoas({ pessoas }: { pessoas: Pessoa[] }) {
         }`}
       >
         {selecionada && (
-          <div className="max-h-[60vh] overflow-y-auto px-5 pb-6 pt-4">
+          <div className="max-h-[60vh] overflow-y-auto px-5 pt-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
+            {selecionada.foto_url && (
+              <div className="mb-4 overflow-hidden rounded-2xl border border-border bg-slate-50">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={selecionada.foto_url}
+                  alt={`Foto de ${selecionada.nome}`}
+                  className="h-48 w-full object-cover"
+                />
+              </div>
+            )}
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div

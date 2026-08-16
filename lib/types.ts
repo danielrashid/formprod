@@ -6,7 +6,8 @@ export type QuestionType =
   | "data"
   | "opcao_unica"
   | "opcao_multipla"
-  | "geoponto";
+  | "geoponto"
+  | "foto";
 
 export interface Secretaria {
   id: string;
@@ -83,6 +84,7 @@ export interface Pessoa {
   latitude: number;
   longitude: number;
   observacoes: string | null;
+  foto_url: string | null;
   created_at: string;
 }
 

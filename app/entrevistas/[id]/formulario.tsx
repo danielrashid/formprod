@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Question, QuestionType } from "@/lib/types";
@@ -19,6 +19,9 @@ import {
   Type,
   ListChecks,
   Send,
+  Camera,
+  Image as ImageIcon,
+  Trash2,
 } from "lucide-react";
 
 interface Props {
@@ -30,6 +33,7 @@ interface Props {
   longitude: number | null;
   questions: Question[];
   initialAnswers: Map<string, unknown>;
+  voltarPara?: string;
 }
 
 const TIPOS: Record<QuestionType, { label: string; icon: typeof Type }> = {
@@ -39,6 +43,7 @@ const TIPOS: Record<QuestionType, { label: string; icon: typeof Type }> = {
   opcao_unica: { label: "Escolha única", icon: ListChecks },
   opcao_multipla: { label: "Múltipla escolha", icon: ListChecks },
   geoponto: { label: "Localização (GPS)", icon: MapPin },
+  foto: { label: "Foto", icon: Camera },
 };
 
 const inputClass =
@@ -53,6 +58,7 @@ export function FormularioDinamico({
   longitude,
   questions,
   initialAnswers,
+  voltarPara = "/entrevistas",
 }: Props) {
   const router = useRouter();
   const concluida = status === "concluida";
@@ -128,7 +134,7 @@ export function FormularioDinamico({
 
   async function voltarSemSalvar() {
     if (concluida || temRascunho) {
-      router.push("/entrevistas");
+      router.push(voltarPara);
       router.refresh();
       return;
     }
@@ -150,7 +156,7 @@ export function FormularioDinamico({
       return;
     }
 
-    router.push("/entrevistas");
+    router.push(voltarPara);
     router.refresh();
   }
 
@@ -211,8 +217,8 @@ export function FormularioDinamico({
   };
 
   return (
-    <main className="min-h-screen bg-slate-900 pb-32">
-      <header className="sticky top-0 z-40 bg-gradient-to-br from-slate-900 via-primary-dark to-primary pb-4 pt-4 text-white shadow-lg">
+    <main className="min-h-screen bg-slate-900 pb-[calc(env(safe-area-inset-bottom)+8rem)]">
+      <header className="sticky top-0 z-40 bg-gradient-to-br from-slate-900 via-primary-dark to-primary pb-4 pt-[calc(env(safe-area-inset-top)+0.5rem)] text-white shadow-lg">
         <div className="mx-auto flex max-w-xl items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <button
@@ -289,13 +295,30 @@ export function FormularioDinamico({
               >
                 <ArrowLeft className="size-4" /> Anterior
               </button>
-              <button
-                onClick={() => irPara(activeIndex + 1)}
-                disabled={activeIndex === questions.length - 1}
-                className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-hover disabled:opacity-40"
-              >
-                Próxima <ArrowRight className="size-4" />
-              </button>
+              {activeIndex === questions.length - 1 ? (
+                <button
+                  onClick={() => {
+                    if (concluida) {
+                      router.push(voltarPara);
+                      router.refresh();
+                    } else {
+                      salvar("final");
+                    }
+                  }}
+                  disabled={saving !== null}
+                  className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-hover disabled:opacity-40"
+                >
+                  <CheckCircle2 className="size-4" />
+                  {concluida ? "Fechar" : "Concluir"}
+                </button>
+              ) : (
+                <button
+                  onClick={() => irPara(activeIndex + 1)}
+                  className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-hover"
+                >
+                  Próxima <ArrowRight className="size-4" />
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -371,7 +394,7 @@ export function FormularioDinamico({
         </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-white/95 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
         <div className="mx-auto flex max-w-xl gap-3 px-4 py-3">
           {!concluida ? (
             <>
@@ -405,7 +428,7 @@ export function FormularioDinamico({
               <CheckCircle2 className="size-5" />
               Entrevista concluída
               <button
-                onClick={() => router.push("/entrevistas")}
+                onClick={() => router.push(voltarPara)}
                 className="ml-auto rounded-lg border border-border px-3 py-1.5 text-sm text-muted"
               >
                 Voltar
@@ -537,7 +560,129 @@ function CampoPergunta({
           <MapPin className="size-4" /> Capturada no bloco de localização abaixo.
         </p>
       );
+    case "foto":
+      return <CampoFoto valor={valor} disabled={disabled} onChange={onChange} />;
     default:
       return null;
   }
+}
+
+function CampoFoto({
+  valor,
+  disabled,
+  onChange,
+}: {
+  valor: unknown;
+  disabled: boolean;
+  onChange: (v: unknown) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+
+  const url = typeof valor === "string" && valor ? valor : null;
+
+  async function enviarArquivo(file: File | null) {
+    if (!file || !file.type.startsWith("image/")) {
+      setErro("Escolha um arquivo de imagem válido.");
+      return;
+    }
+    setErro(null);
+    setUploading(true);
+
+    const supabase = createClient();
+    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const path = `entrevistas/${crypto.randomUUID()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("fotos")
+      .upload(path, file, { contentType: file.type, upsert: false });
+
+    if (uploadError) {
+      setUploading(false);
+      setErro("Erro ao enviar a foto: " + uploadError.message);
+      return;
+    }
+
+    const { data } = supabase.storage.from("fotos").getPublicUrl(path);
+    setUploading(false);
+    onChange(data.publicUrl);
+  }
+
+  return (
+    <div className="space-y-3">
+      {url ? (
+        <div className="space-y-3">
+          <div className="relative overflow-hidden rounded-xl border border-border bg-slate-50">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={url}
+              alt="Foto registrada na entrevista"
+              className="h-56 w-full object-cover"
+            />
+          </div>
+          {!disabled && (
+            <button
+              onClick={() => onChange(null)}
+              disabled={uploading}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-danger bg-danger-soft px-4 py-2.5 text-sm font-semibold text-danger transition hover:bg-danger/10 disabled:opacity-50"
+            >
+              <Trash2 className="size-4" /> Remover foto
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => cameraRef.current?.click()}
+            disabled={disabled || uploading}
+            className="flex flex-col items-center gap-1.5 rounded-xl border border-primary bg-primary-soft px-3 py-4 text-sm font-semibold text-primary transition hover:bg-primary/10 disabled:opacity-50"
+          >
+            <Camera className="size-6" />
+            Tirar foto
+          </button>
+          <button
+            onClick={() => inputRef.current?.click()}
+            disabled={disabled || uploading}
+            className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-white px-3 py-4 text-sm font-semibold text-foreground transition hover:bg-slate-50 disabled:opacity-50"
+          >
+            <ImageIcon className="size-6" />
+            Galeria
+          </button>
+          <input
+            ref={cameraRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              enviarArquivo(e.target.files?.[0] ?? null);
+              e.target.value = "";
+            }}
+          />
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              enviarArquivo(e.target.files?.[0] ?? null);
+              e.target.value = "";
+            }}
+          />
+        </div>
+      )}
+
+      {uploading && (
+        <p className="flex items-center justify-center gap-2 text-xs font-medium text-primary">
+          <Loader2 className="size-4 animate-spin" /> Enviando foto...
+        </p>
+      )}
+      {erro && <p className="text-xs font-medium text-danger">{erro}</p>}
+      {url && !disabled && (
+        <p className="text-xs text-muted">A foto fica salva junto com a entrevista.</p>
+      )}
+    </div>
+  );
 }

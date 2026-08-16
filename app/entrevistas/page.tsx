@@ -13,9 +13,11 @@ import {
   Clock,
   CheckCircle2,
   Map,
+  Settings2,
 } from "lucide-react";
 import type { UserRole } from "@/components/ui";
 import { ExcluirEntrevista } from "@/app/entrevistas/excluir";
+import { formatDateTimeBR } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +57,9 @@ export default async function EntrevistasPage() {
     ...(role !== "agente"
       ? [NavItem("/painel", "Painel", LayoutDashboard, false)]
       : []),
+    ...(role === "admin"
+      ? [NavItem("/admin", "Admin", Settings2, false)]
+      : []),
   ];
 
   return (
@@ -65,7 +70,7 @@ export default async function EntrevistasPage() {
       nav={nav}
     >
       <SectionTitle>Nova entrevista</SectionTitle>
-      <div className="grid gap-3">
+      <div className="grid grid-cols-1 gap-3">
         {formsData.map((form) => (
           <a key={form.id} href={`/entrevistas/nova?form=${form.id}`} className="group">
             <Card className="flex items-center gap-4 p-4 transition group-hover:shadow-card-hover">
@@ -103,7 +108,7 @@ export default async function EntrevistasPage() {
         >
           Minhas entrevistas
         </SectionTitle>
-        <div className="grid gap-3">
+        <div className="grid grid-cols-1 gap-3">
           {entrevistasData.map((e) => {
             const concluida = e.status === "concluida";
             return (
@@ -128,13 +133,7 @@ export default async function EntrevistasPage() {
                         {e.forms?.nome}
                       </p>
                       <p className="text-xs text-muted">
-                        {new Date(e.created_at).toLocaleString("pt-BR", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {formatDateTimeBR(e.created_at)}
                       </p>
                     </div>
                     <Badge tone={concluida ? "green" : "amber"}>

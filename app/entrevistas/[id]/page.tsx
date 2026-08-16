@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
-import { requireProfile } from "@/app/actions/auth";
+import { requireProfile, isMaster } from "@/app/actions/auth";
 import { FormularioDinamico } from "@/app/entrevistas/[id]/formulario";
 import type { EntrevistaComForm, Question } from "@/lib/types";
+import type { UserRole } from "@/components/ui";
 
 export default async function EntrevistaPage({
   params,
@@ -23,14 +24,33 @@ export default async function EntrevistaPage({
     redirect("/entrevistas");
   }
 
-  if (entrevista.agente_id !== profile.id) {
-    redirect("/entrevistas");
-  }
-
   const entrevistaData = entrevista as unknown as EntrevistaComForm;
 
   if (!entrevistaData.forms) {
     redirect("/entrevistas");
+  }
+
+  const ehDono = entrevistaData.agente_id === profile.id;
+  const role = profile.role as UserRole;
+  const concluida = entrevistaData.status === "concluida";
+  const visualizando = !ehDono && role !== "agente" && concluida;
+
+  if (!ehDono && (!concluida || role === "agente")) {
+    redirect("/painel");
+  }
+
+  if (!ehDono && role !== "agente") {
+    const master = await isMaster();
+    if (!master) {
+      const { data: form } = await supabase
+        .from("forms")
+        .select("secretaria_id")
+        .eq("id", entrevistaData.forms.id)
+        .single();
+      if (form?.secretaria_id !== profile.secretaria_id) {
+        redirect("/painel");
+      }
+    }
   }
 
   const { data: questions } = await supabase
@@ -61,6 +81,7 @@ export default async function EntrevistaPage({
       longitude={entrevistaData.longitude}
       questions={questionsData}
       initialAnswers={answersMap}
+      voltarPara={visualizando ? "/painel" : "/entrevistas"}
     />
   );
 }

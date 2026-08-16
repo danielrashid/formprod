@@ -44,9 +44,9 @@ interface AppShellProps {
 
 export function AppShell({ title, subtitle, user, nav, children }: AppShellProps) {
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-[calc(env(safe-area-inset-bottom)+6rem)]">
       <header className="sticky top-0 z-40 bg-gradient-to-br from-slate-900 via-primary-dark to-primary text-white shadow-lg">
-        <div className="mx-auto max-w-xl px-4 pt-4 pb-5">
+        <div className="mx-auto max-w-xl px-4 pt-[calc(env(safe-area-inset-top)+0.5rem)] pb-5">
           <div className="flex items-center justify-between gap-3">
             <Logo />
             <div className="flex items-center gap-2">
@@ -78,10 +78,10 @@ export function AppShell({ title, subtitle, user, nav, children }: AppShellProps
         </div>
       </header>
 
-      <main className="mx-auto max-w-xl px-4 pt-5">{children}</main>
+      <main className="mx-auto w-full max-w-xl min-w-0 px-4 pt-5">{children}</main>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-xl items-stretch justify-around px-2 py-1.5">
+        <div className="mx-auto flex max-w-xl items-stretch justify-around px-2 pt-1.5 pb-[calc(env(safe-area-inset-bottom)+0.375rem)]">
           {nav.map((item) => (
             <Link
               key={item.href}
