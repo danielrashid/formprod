@@ -137,6 +137,13 @@ export function FormularioDinamico({
     setAnswers((prev) => ({ ...prev, [questionId]: valor }));
   }
 
+  function respostaVazia(q: Question): boolean {
+    if (q.tipo === "geoponto") return geo == null;
+    const v = answers[q.id];
+    if (Array.isArray(v)) return v.length === 0;
+    return v == null || v === "";
+  }
+
   async function voltarSemSalvar() {
     if (concluida || temRascunho) {
       router.push(voltarPara);
@@ -174,6 +181,16 @@ export function FormularioDinamico({
       showMsg("A entrevista requer localização. Capture o GPS antes de concluir.", "error");
       setSaving(null);
       return;
+    }
+
+    if (tipo === "final") {
+      const faltando = questions.find((q) => q.obrigatoria && respostaVazia(q));
+      if (faltando) {
+        setActiveIndex(Math.max(0, questions.findIndex((q) => q.id === faltando.id)));
+        showMsg(`A pergunta "${faltando.titulo}" é obrigatória e não foi respondida.`, "error");
+        setSaving(null);
+        return;
+      }
     }
 
     const rows = questions.map((q) => ({
@@ -218,6 +235,16 @@ export function FormularioDinamico({
   const current = questions[activeIndex];
 
   const irPara = (idx: number) => {
+    if (
+      !concluida &&
+      idx > activeIndex &&
+      current &&
+      current.obrigatoria &&
+      respostaVazia(current)
+    ) {
+      showMsg("Esta pergunta é obrigatória. Responda para continuar.", "error");
+      return;
+    }
     if (idx >= 0 && idx < questions.length) setActiveIndex(idx);
   };
 
