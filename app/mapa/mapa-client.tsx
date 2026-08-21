@@ -15,9 +15,20 @@ const MapaPessoas = dynamic(() => import("@/app/mapa/mapa").then((m) => m.MapaPe
 export function MapaClient({
   pessoas,
   entrevistasPorPessoa,
+  forms,
+  agenteId,
 }: {
   pessoas: Pessoa[];
   entrevistasPorPessoa: Record<string, number>;
+  forms: { id: string; nome: string }[];
+  agenteId: string;
 }) {
-  return <MapaPessoas pessoas={pessoas} entrevistasPorPessoa={entrevistasPorPessoa} />;
+  return (
+    <MapaPessoas
+      pessoas={pessoas}
+      entrevistasPorPessoa={entrevistasPorPessoa}
+      forms={forms}
+      agenteId={agenteId}
+    />
+  );
 }

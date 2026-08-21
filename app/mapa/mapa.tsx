@@ -31,10 +31,24 @@ import {
   ChevronUp,
   FileText,
   Loader2,
+  PlusCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const DF_CENTER: [number, number] = [-15.7942, -47.8822];
+
+const TIPOS_MAPA = {
+  padrao: {
+    label: "Padrão",
+    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  },
+  satelite: {
+    label: "Satélite",
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+  },
+} as const;
+
+type TipoMapa = keyof typeof TIPOS_MAPA;
 
 const COR_PADRAO = "#2563eb";
 const COR_RETORNO = "#0d9488";
@@ -133,9 +147,13 @@ function isImagem(v: string): boolean {
 export function MapaPessoas({
   pessoas,
   entrevistasPorPessoa,
+  forms,
+  agenteId,
 }: {
   pessoas: Pessoa[];
   entrevistasPorPessoa: Record<string, number>;
+  forms: { id: string; nome: string }[];
+  agenteId: string;
 }) {
   const router = useRouter();
   const [selecionada, setSelecionada] = useState<Pessoa | null>(null);
@@ -144,6 +162,10 @@ export function MapaPessoas({
   const [entrevistas, setEntrevistas] = useState<EntrevistaDetalhe[] | null>(null);
   const [carregandoEntrevistas, setCarregandoEntrevistas] = useState(false);
   const [expandido, setExpandido] = useState(false);
+  const [mostrarForms, setMostrarForms] = useState(false);
+  const [iniciandoFormId, setIniciandoFormId] = useState<string | null>(null);
+  const [erroNovaEntrevista, setErroNovaEntrevista] = useState<string | null>(null);
+  const [tipoMapa, setTipoMapa] = useState<TipoMapa>("padrao");
   const mapRef = useRef<LeafletMap | null>(null);
 
   const ras = useMemo(() => {
@@ -219,7 +241,32 @@ export function MapaPessoas({
     setSelecionada(p);
     setExpandido(false);
     setEntrevistas(null);
+    setMostrarForms(false);
+    setIniciandoFormId(null);
+    setErroNovaEntrevista(null);
     if (p) carregarEntrevistas(p.id);
+  }
+
+  async function iniciarEntrevista(formId: string) {
+    if (!selecionada || iniciandoFormId) return;
+    setIniciandoFormId(formId);
+    setErroNovaEntrevista(null);
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("entrevistas")
+      .insert({
+        form_id: formId,
+        agente_id: agenteId,
+        pessoa_id: selecionada.id,
+      })
+      .select("id")
+      .single();
+    if (error || !data) {
+      setErroNovaEntrevista("Não foi possível iniciar a entrevista. Tente novamente.");
+      setIniciandoFormId(null);
+      return;
+    }
+    router.push(`/entrevistas/${data.id}`);
   }
 
   return (
@@ -272,15 +319,20 @@ export function MapaPessoas({
           className="h-full w-full"
           scrollWheelZoom
           zoomControl
+          attributionControl={false}
           ref={(map) => {
             mapRef.current = map ?? null;
           }}
           whenReady={() => setMapReady(true)}
         >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+          <TileLayer key={tipoMapa} url={TIPOS_MAPA[tipoMapa].url} attribution="" />
+          {tipoMapa === "satelite" && (
+            <TileLayer
+              key="rotulos"
+              url="https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
+              attribution=""
+            />
+          )}
           <ClickHandler onSelect={selecionar} />
           <FlyTo target={target} />
           {filtradas.map((p) => (
@@ -314,6 +366,21 @@ export function MapaPessoas({
               Outros
             </span>
           </div>
+        </div>
+
+        <div className="absolute right-3 top-3 z-[800] flex overflow-hidden rounded-full bg-slate-900/85 text-xs font-semibold text-white shadow-lg backdrop-blur">
+          {(Object.keys(TIPOS_MAPA) as TipoMapa[]).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTipoMapa(t)}
+              className={`px-3 py-1.5 transition ${
+                tipoMapa === t ? "bg-white text-primary-dark" : "hover:bg-white/15"
+              }`}
+            >
+              {TIPOS_MAPA[t].label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -444,7 +511,7 @@ export function MapaPessoas({
             </div>
 
             <div className="mt-5 border-t border-border pt-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
                   <FileText className="size-4 text-primary" />
                   Entrevistas
@@ -454,21 +521,64 @@ export function MapaPessoas({
                     </span>
                   )}
                 </p>
-                {entrevistas && entrevistas.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setExpandido((v) => !v)}
-                    className="flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-slate-200"
-                  >
-                    {expandido ? "Recolher" : "Expandir"}
-                    {expandido ? (
-                      <ChevronUp className="size-3.5" />
-                    ) : (
-                      <ChevronDown className="size-3.5" />
-                    )}
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  {forms.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setMostrarForms((v) => !v)}
+                      className="flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-white shadow-md transition hover:brightness-110 active:scale-[0.98]"
+                    >
+                      <PlusCircle className="size-3.5" />
+                      Nova
+                    </button>
+                  )}
+                  {entrevistas && entrevistas.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setExpandido((v) => !v)}
+                      className="flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-slate-200"
+                    >
+                      {expandido ? "Recolher" : "Expandir"}
+                      {expandido ? (
+                        <ChevronUp className="size-3.5" />
+                      ) : (
+                        <ChevronDown className="size-3.5" />
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
+
+              {mostrarForms && forms.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-xs font-medium text-muted">
+                    Escolha o formulário para iniciar a entrevista com{" "}
+                    {selecionada.nome.split(" ")[0]}:
+                  </p>
+                  {forms.map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      disabled={iniciandoFormId !== null}
+                      onClick={() => iniciarEntrevista(f.id)}
+                      className="flex w-full items-center justify-between gap-3 rounded-xl border border-border bg-slate-50 px-3.5 py-2.5 text-left transition hover:border-primary hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <span className="text-sm font-semibold text-foreground">{f.nome}</span>
+                      {iniciandoFormId === f.id ? (
+                        <Loader2 className="size-4 shrink-0 animate-spin text-primary" />
+                      ) : (
+                        <PlusCircle className="size-4 shrink-0 text-primary" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {erroNovaEntrevista && (
+                <p className="mt-3 rounded-xl bg-danger-soft px-3 py-2 text-xs font-medium text-danger">
+                  {erroNovaEntrevista}
+                </p>
+              )}
 
               {carregandoEntrevistas && (
                 <p className="mt-3 flex items-center gap-2 text-xs font-medium text-muted">
