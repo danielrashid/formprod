@@ -82,6 +82,9 @@ export interface Pessoa {
   estado_origem: string | null;
   tem_doenca: boolean;
   doenca: string | null;
+  raca_cor: string | null;
+  identidade_genero: string | null;
+  orientacao_sexual: string | null;
   ra: string | null;
   latitude: number;
   longitude: number;

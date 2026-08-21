@@ -139,6 +139,9 @@ export function NovaEntrevistaClient({ formId, formNome, agenteId, pessoas }: Pr
   const [estadoOrigem, setEstadoOrigem] = useState("");
   const [temDoenca, setTemDoenca] = useState(false);
   const [doenca, setDoenca] = useState("");
+  const [racaCor, setRacaCor] = useState("");
+  const [identidadeGenero, setIdentidadeGenero] = useState("");
+  const [orientacaoSexual, setOrientacaoSexual] = useState("");
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [ra, setRa] = useState("");
@@ -290,6 +293,9 @@ export function NovaEntrevistaClient({ formId, formNome, agenteId, pessoas }: Pr
       estado_origem: estadoOrigem.trim() || null,
       tem_doenca: temDoenca,
       doenca: temDoenca ? doenca.trim() : null,
+      raca_cor: racaCor || null,
+      identidade_genero: identidadeGenero || null,
+      orientacao_sexual: orientacaoSexual || null,
       ra: ra.trim() || null,
       latitude,
       longitude,
@@ -371,143 +377,7 @@ export function NovaEntrevistaClient({ formId, formNome, agenteId, pessoas }: Pr
           </div>
         )}
 
-        <div className="mb-4">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              placeholder="Buscar por nome ou CPF..."
-              className={`${inputClass} pl-9`}
-            />
-          </div>
-
-          <div className="mt-2 grid grid-cols-3 gap-2">
-            <select
-              value={filtroRA}
-              onChange={(e) => setFiltroRA(e.target.value)}
-              className={inputClass}
-            >
-              <option value="">RA: todas</option>
-              {ras.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filtroVoltar}
-              onChange={(e) => setFiltroVoltar(e.target.value)}
-              className={inputClass}
-            >
-              <option value="">Quer voltar: todos</option>
-              <option value="sim">Quer voltar</option>
-              <option value="nao">Não quer</option>
-              <option value="nao_sabe">Não sabe</option>
-            </select>
-            <select
-              value={filtroDoenca}
-              onChange={(e) => setFiltroDoenca(e.target.value)}
-              className={inputClass}
-            >
-              <option value="">Doença: todas</option>
-              <option value="sim">Com doença</option>
-              <option value="nao">Sem doença</option>
-            </select>
-          </div>
-
-          <div className="mt-1.5 flex items-center justify-between">
-            <p className="text-xs text-muted">
-              {filtradas.length} cidadãos encontrados
-            </p>
-            {temFiltroExtra && (
-              <button
-                type="button"
-                onClick={() => {
-                  setFiltroRA("");
-                  setFiltroVoltar("");
-                  setFiltroDoenca("");
-                }}
-                className="text-xs font-medium text-primary hover:underline"
-              >
-                Limpar filtros
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          {filtradas.map((p) => {
-            const selected = selecionadaId === p.id;
-            return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => escolherPessoa(p.id)}
-                disabled={salvando}
-                className={`flex w-full items-center gap-3 rounded-2xl bg-surface p-3.5 text-left shadow-card transition active:scale-[0.99] disabled:opacity-50 ${
-                  selected ? "ring-2 ring-primary" : ""
-                }`}
-              >
-                {p.foto_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={p.foto_url}
-                    alt=""
-                    className="size-12 shrink-0 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="grid size-12 shrink-0 place-items-center rounded-full bg-primary-soft text-primary">
-                    <User className="size-6" />
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold text-foreground">{p.nome}</p>
-                  <p className="truncate text-xs text-muted">
-                    {p.cpf ? maskCPF(p.cpf) : "CPF não informado"} · {p.ra ?? "RA não informada"}
-                  </p>
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {p.tem_doenca && (
-                      <Badge tone="amber">
-                        <Stethoscope className="size-3" /> Doença
-                      </Badge>
-                    )}
-                    {p.quer_voltar_estado === "sim" && (
-                      <Badge tone="blue">
-                        <Home className="size-3" /> Quer voltar
-                      </Badge>
-                    )}
-                    {p.quer_voltar_estado === "nao" && (
-                      <Badge>
-                        <Home className="size-3" /> Não quer
-                      </Badge>
-                    )}
-                    {p.quer_voltar_estado === "nao_sabe" && (
-                      <Badge>
-                        <Home className="size-3" /> Não sabe
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                {salvando && selected ? (
-                  <Loader2 className="size-5 shrink-0 animate-spin text-primary" />
-                ) : (
-                  <span className="shrink-0 text-xs font-semibold text-primary">
-                    Iniciar
-                  </span>
-                )}
-              </button>
-            );
-          })}
-          {filtradas.length === 0 && (
-            <div className="rounded-2xl border-2 border-dashed border-border bg-surface-muted px-6 py-8 text-center text-sm text-muted">
-              Nenhum cidadão encontrado.
-            </div>
-          )}
-        </div>
-
-        <div className="mt-6">
+        <div className="mb-5">
           <button
             type="button"
             onClick={abrirCriar}
@@ -714,6 +584,64 @@ export function NovaEntrevistaClient({ formId, formNome, agenteId, pessoas }: Pr
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-slate-600">
+                    Raça/cor
+                  </label>
+                  <select
+                    value={racaCor}
+                    onChange={(e) => setRacaCor(e.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="">—</option>
+                    <option>Preta</option>
+                    <option>Parda</option>
+                    <option>Branca</option>
+                    <option>Amarela</option>
+                    <option>Indígena</option>
+                    <option>Não informou</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-slate-600">
+                    Identidade de gênero
+                  </label>
+                  <select
+                    value={identidadeGenero}
+                    onChange={(e) => setIdentidadeGenero(e.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="">—</option>
+                    <option>Cisgênero</option>
+                    <option>Mulher transgênero</option>
+                    <option>Travesti</option>
+                    <option>Homem transgênero</option>
+                    <option>Não binário</option>
+                    <option>Não soube informar</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-600">
+                  Orientação sexual
+                </label>
+                <select
+                  value={orientacaoSexual}
+                  onChange={(e) => setOrientacaoSexual(e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">—</option>
+                  <option>Heterossexual</option>
+                  <option>Homossexual</option>
+                  <option>Bissexual</option>
+                  <option>Assexual</option>
+                  <option>Outra</option>
+                  <option>Não soube informar</option>
+                </select>
+              </div>
+
               <div>
                 <label className="mb-1.5 block text-xs font-semibold text-slate-600">
                   Quer voltar ao estado de origem?
@@ -847,6 +775,143 @@ export function NovaEntrevistaClient({ formId, formNome, agenteId, pessoas }: Pr
             </div>
           )}
         </div>
+
+        <div className="mb-4">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar por nome ou CPF..."
+              className={`${inputClass} pl-9`}
+            />
+          </div>
+
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            <select
+              value={filtroRA}
+              onChange={(e) => setFiltroRA(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">RA: todas</option>
+              {ras.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filtroVoltar}
+              onChange={(e) => setFiltroVoltar(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">Quer voltar: todos</option>
+              <option value="sim">Quer voltar</option>
+              <option value="nao">Não quer</option>
+              <option value="nao_sabe">Não sabe</option>
+            </select>
+            <select
+              value={filtroDoenca}
+              onChange={(e) => setFiltroDoenca(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">Doença: todas</option>
+              <option value="sim">Com doença</option>
+              <option value="nao">Sem doença</option>
+            </select>
+          </div>
+
+          <div className="mt-1.5 flex items-center justify-between">
+            <p className="text-xs text-muted">
+              {filtradas.length} cidadãos encontrados
+            </p>
+            {temFiltroExtra && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFiltroRA("");
+                  setFiltroVoltar("");
+                  setFiltroDoenca("");
+                }}
+                className="text-xs font-medium text-primary hover:underline"
+              >
+                Limpar filtros
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          {filtradas.map((p) => {
+            const selected = selecionadaId === p.id;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => escolherPessoa(p.id)}
+                disabled={salvando}
+                className={`flex w-full items-center gap-3 rounded-2xl bg-surface p-3.5 text-left shadow-card transition active:scale-[0.99] disabled:opacity-50 ${
+                  selected ? "ring-2 ring-primary" : ""
+                }`}
+              >
+                {p.foto_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={p.foto_url}
+                    alt=""
+                    className="size-12 shrink-0 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="grid size-12 shrink-0 place-items-center rounded-full bg-primary-soft text-primary">
+                    <User className="size-6" />
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold text-foreground">{p.nome}</p>
+                  <p className="truncate text-xs text-muted">
+                    {p.cpf ? maskCPF(p.cpf) : "CPF não informado"} · {p.ra ?? "RA não informada"}
+                  </p>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {p.tem_doenca && (
+                      <Badge tone="amber">
+                        <Stethoscope className="size-3" /> Doença
+                      </Badge>
+                    )}
+                    {p.quer_voltar_estado === "sim" && (
+                      <Badge tone="blue">
+                        <Home className="size-3" /> Quer voltar
+                      </Badge>
+                    )}
+                    {p.quer_voltar_estado === "nao" && (
+                      <Badge>
+                        <Home className="size-3" /> Não quer
+                      </Badge>
+                    )}
+                    {p.quer_voltar_estado === "nao_sabe" && (
+                      <Badge>
+                        <Home className="size-3" /> Não sabe
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                {salvando && selected ? (
+                  <Loader2 className="size-5 shrink-0 animate-spin text-primary" />
+                ) : (
+                  <span className="shrink-0 text-xs font-semibold text-primary">
+                    Iniciar
+                  </span>
+                )}
+              </button>
+            );
+          })}
+          {filtradas.length === 0 && (
+            <div className="rounded-2xl border-2 border-dashed border-border bg-surface-muted px-6 py-8 text-center text-sm text-muted">
+              Nenhum cidadão encontrado.
+            </div>
+          )}
+        </div>
+
       </div>
     </main>
   );
